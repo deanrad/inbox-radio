@@ -37,7 +37,7 @@ player/play: title: jam.mp3, bytes: ab092c...
 player/complete: title: jam.mp3
 
 */
-const { agent, after, concat } = require("rx-helper");
+const { agent, after, from, concat, randomId } = require("rx-helper");
 
 const indent = ({ type }) => {
   const spaces = {
@@ -53,12 +53,19 @@ const indent = ({ type }) => {
 };
 
 function format({ type, payload = {} }) {
+  const v = val => {
+    return Array.isArray(val)
+      ? JSON.stringify(val)
+          .replace(/"/g, "")
+          .replace(/,/g, ", ")
+      : val;
+  };
   return (
     type +
     ": " +
     (typeof payload === "object"
       ? Array.from(Object.keys(payload))
-          .map(k => `${k}: ${payload[k]}`)
+          .map(k => `${k}: ${v(payload[k])}`)
           .join(", ")
       : payload)
   );
@@ -71,6 +78,61 @@ function start() {
 agent.addFilter(({ action }) => {
   console.log(indent(action) + format(action));
 });
+
+agent.on(
+  "search",
+  () =>
+    concat(
+      after(0, { subject: "Friday gig" }),
+      after(0, { subject: "Great jam" })
+    ),
+  { type: "goog/msg/header" }
+);
+
+// Return some simulated payloads
+agent.on(
+  "goog/msg/header",
+  ({ action }) =>
+    after(10, {
+      ...action.payload,
+      att: action.payload.subject === "Great jam" ? ["jam.mp3", "jam2.mp3"] : []
+    }),
+  { type: "goog/msg/body" }
+);
+
+agent.on(
+  "goog/msg/body",
+  ({ action }) => from(action.payload.att.map(att => ({ att }))),
+  {
+    type: "goog/att/start"
+  }
+);
+
+agent.on(
+  "goog/att/start",
+  ({ action }) =>
+    after(1000, {
+      ...action.payload,
+      bytes: randomId() + "..."
+    }),
+  {
+    type: "goog/att/finish",
+    concurrency: "serial"
+  }
+);
+
+agent.on(
+  "goog/att/finish",
+  ({ action }) =>
+    concat(
+      after(0, { type: "player/play", payload: action.payload }),
+      after(1500, { type: "player/complete", payload: action.payload })
+    ),
+  {
+    processResults: true,
+    concurrency: "serial"
+  }
+);
 
 // agent.process({ type: "goog/msg/header", payload: { Subject: "Great jam" } });
 // agent.process({ type: "goog/msg/header", payload: { Subject: "Friday gig" } });
