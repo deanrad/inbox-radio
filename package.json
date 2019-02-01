@@ -10,6 +10,8 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "rx-helper": "^1.0.1"
+    "googleapis": "^37.1.0",
+    "rx-helper": "^1.0.1",
+    "rxjs": "^6.4.0"
   }
 }
