@@ -1,55 +1,42 @@
 /*
-We think it's as simple as playing a file Greg sent me, but...
-search: q: Greg
-player/play: title: jam.mp3, bytes: ab092c...
-player/complete: title: jam.mp3
-
-// When we search we don't get back files, but message headers
-search: q: Greg
-  goog/msg/header: Subject: Great jam
-  goog/msg/header: Subject: Friday gig
-
-// For each header, we must query for its body, which tells us its attachments
-search: q: Greg
-  goog/msg/header: Subject: Great jam
-  goog/msg/header: Subject: Friday gig
-    goog/msg/body: Subject: Friday gig, att: []
-    goog/msg/body: Subject: Great jam, att: [jam.mp3, jam2.mp3]
-
-// For each attachment, we must then get, and decode its bytes into playable audio
-search: q: Greg
-  goog/msg/header: Subject: Great jam
-  goog/msg/header: Subject: Friday gig
-    goog/msg/body: Subject: Friday gig, att: []
-    goog/msg/body: Subject: Great jam, att: [jam.mp3, jam2.mp3]
-      goog/att/start: att: jam.mp3
-
-// Then as complete attachment bytes come back, we can play them (and start new ones)
-search: q: Greg
-  goog/msg/header: Subject: Great jam
-  goog/msg/header: Subject: Friday gig
-    goog/msg/body: Subject: Friday gig, att: []
-    goog/msg/body: Subject: Great jam, att: [jam.mp3, jam2.mp3]
-      goog/att/start: att: jam.mp3
-      goog/att/finish: att: jam.mp3, bytes: ab092c...
-player/play: title: jam.mp3, bytes: ab092c...
-      goog/att/start: att: jam2.mp3
-player/complete: title: jam.mp3
+👩🏽‍💻 user/search: q: Greg
+  📨 goog/msg/header: subject: Friday gig
+  📨 goog/msg/header: subject: Great jam
+    📨 goog/msg/body: subject: Friday gig, att: []
+    📨 goog/msg/body: subject: Great jam, att: [jam.mp3, jam2.mp3]
+    📨 goog/att/id: att: jam.mp3
+    📨 goog/att/id: att: jam2.mp3
+  🛰 net/att/start: att: jam.mp3
+  🛰 net/att/finish: att: jam.mp3, bytes: ed5e27a...
+🔊 player/play: att: jam.mp3, bytes: ed5e27a...
+  🛰 net/att/start: att: jam2.mp3
+  🛰 net/att/finish: att: jam2.mp3, bytes: 4cd26f0...
+🔊 player/complete: att: jam.mp3, bytes: ed5e27a...
+🔊 player/play: att: jam2.mp3, bytes: 4cd26f0...
+🔊 player/complete: att: jam2.mp3, bytes: 4cd26f0...
 
 */
 const { agent, after, from, concat, randomId } = require("rx-helper");
 
 const indent = ({ type }) => {
   const spaces = {
-    search: "",
+    "user/search": "",
     "player/play": "",
     "player/complete": "",
     "goog/msg/header": " ".repeat(2),
     "goog/msg/body": " ".repeat(4),
-    "goog/att/start": " ".repeat(6),
-    "goog/att/finish": " ".repeat(6)
+    "goog/att/id": " ".repeat(4),
+    "net/att/start": " ".repeat(2),
+    "net/att/finish": " ".repeat(2)
   };
-  return spaces[type] || "";
+  const emoji = type => {
+    if (type.match(/^user/)) return "👩🏽‍💻 ";
+    if (type.match(/^net/)) return "🛰 ";
+    if (type.match(/^goog/)) return "📨 ";
+    if (type.match(/^player/)) return "🔊 ";
+    return "";
+  };
+  return "" + (spaces[type] || "") + emoji(type);
 };
 
 function format({ type, payload = {} }) {
@@ -72,7 +59,7 @@ function format({ type, payload = {} }) {
 }
 
 function start() {
-  agent.process({ type: "search", payload: { q: "Greg" } });
+  agent.process({ type: "user/search", payload: { q: "Greg" } });
 }
 
 agent.addFilter(({ action }) => {
@@ -80,7 +67,7 @@ agent.addFilter(({ action }) => {
 });
 
 agent.on(
-  "search",
+  "user/search",
   () =>
     concat(
       after(0, { subject: "Friday gig" }),
@@ -93,7 +80,7 @@ agent.on(
 agent.on(
   "goog/msg/header",
   ({ action }) =>
-    after(10, {
+    after(500, {
       ...action.payload,
       att: action.payload.subject === "Great jam" ? ["jam.mp3", "jam2.mp3"] : []
     }),
@@ -102,27 +89,38 @@ agent.on(
 
 agent.on(
   "goog/msg/body",
-  ({ action }) => from(action.payload.att.map(att => ({ att }))),
+  ({ action }) => {
+    return from(action.payload.att.map(att => ({ att })));
+  },
   {
-    type: "goog/att/start"
+    type: "goog/att/id"
   }
 );
 
 agent.on(
-  "goog/att/start",
+  "goog/att/id",
   ({ action }) =>
-    after(1000, {
-      ...action.payload,
-      bytes: randomId() + "..."
-    }),
+    concat(
+      after(0, {
+        type: "net/att/start",
+        payload: action.payload
+      }),
+      after(1000, {
+        type: "net/att/finish",
+        payload: {
+          ...action.payload,
+          bytes: randomId() + "..."
+        }
+      })
+    ),
   {
-    type: "goog/att/finish",
+    processResults: true,
     concurrency: "serial"
   }
 );
 
 agent.on(
-  "goog/att/finish",
+  "net/att/finish",
   ({ action }) =>
     concat(
       after(0, { type: "player/play", payload: action.payload }),
@@ -166,4 +164,3 @@ agent.on(
 // agent.process({ type: "player/complete", payload: { title: "jam.mp3" } });
 
 start();
-console.log("");
