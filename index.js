@@ -37,7 +37,7 @@ player/play: title: jam.mp3, bytes: ab092c...
 player/complete: title: jam.mp3
 
 */
-const { agent } = require("rx-helper");
+const { agent, after, concat } = require("rx-helper");
 
 const indent = ({ type }) => {
   const spaces = {
@@ -64,40 +64,44 @@ function format({ type, payload = {} }) {
   );
 }
 
+function start() {
+  agent.process({ type: "search", payload: { q: "Greg" } });
+}
+
 agent.addFilter(({ action }) => {
   console.log(indent(action) + format(action));
 });
 
-agent.process({ type: "search", payload: { q: "Greg" } });
-agent.process({ type: "goog/msg/header", payload: { Subject: "Great jam" } });
-agent.process({ type: "goog/msg/header", payload: { Subject: "Friday gig" } });
+// agent.process({ type: "goog/msg/header", payload: { Subject: "Great jam" } });
+// agent.process({ type: "goog/msg/header", payload: { Subject: "Friday gig" } });
 
-agent.process({
-  type: "goog/msg/body",
-  payload: { Subject: "Great jam", att: "jam.mp3" }
-});
-agent.process({ type: "goog/att/start", payload: { att: "jam.mp3" } });
+// agent.process({
+//   type: "goog/msg/body",
+//   payload: { Subject: "Great jam", att: "jam.mp3" }
+// });
+// agent.process({ type: "goog/att/start", payload: { att: "jam.mp3" } });
 
-agent.process({
-  type: "goog/msg/header",
-  payload: { Subject: "Rehearsal trax" }
-});
-agent.process({
-  type: "goog/msg/header",
-  payload: { Subject: "Saturday practice" }
-});
-agent.process({
-  type: "goog/att/finish",
-  payload: { att: "jam.mp3", bytes: "ab092c..." }
-});
-agent.process({
-  type: "goog/att/start",
-  payload: { att: "jam2.mp3" }
-});
-agent.process({
-  type: "player/play",
-  payload: { title: "jam.mp3", bytes: "ab092c..." }
-});
-agent.process({ type: "player/complete", payload: { title: "jam.mp3" } });
+// agent.process({
+//   type: "goog/msg/header",
+//   payload: { Subject: "Rehearsal trax" }
+// });
+// agent.process({
+//   type: "goog/msg/header",
+//   payload: { Subject: "Saturday practice" }
+// });
+// agent.process({
+//   type: "goog/att/finish",
+//   payload: { att: "jam.mp3", bytes: "ab092c..." }
+// });
+// agent.process({
+//   type: "goog/att/start",
+//   payload: { att: "jam2.mp3" }
+// });
+// agent.process({
+//   type: "player/play",
+//   payload: { title: "jam.mp3", bytes: "ab092c..." }
+// });
+// agent.process({ type: "player/complete", payload: { title: "jam.mp3" } });
 
+start();
 console.log("");
