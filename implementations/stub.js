@@ -36,7 +36,7 @@ function downloadAttachment({ action }) {
 function playFinishedAttachment({ action }) {
   return concat(
     after(0, { type: "player/play", payload: action.payload }),
-    after(1500, { type: "player/complete", payload: action.payload })
+    after(5500, { type: "player/complete", payload: action.payload })
   );
 }
 
