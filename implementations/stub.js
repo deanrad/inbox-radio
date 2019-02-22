@@ -1,5 +1,6 @@
 const { after, from, concat, randomId } = require("rx-helper");
 
+const mult = process.env.TIME_SCALE = 0.10
 function getMatchingMsgHeadersFromSearch() {
   return concat(
     after(0, { subject: "Friday gig" }),
@@ -9,7 +10,7 @@ function getMatchingMsgHeadersFromSearch() {
 function getMessageBodyFromHeader({ action }) {
   return after(1500, {
     ...action.payload,
-    att: action.payload.subject === "Great jam" ? ["jam.mp3", "jam2.mp3"] : []
+    att: action.payload.subject === "Great jam" ? ["jam.mp3", "jam2.mp3", "jam3.mp3"] : []
   });
 }
 
@@ -23,7 +24,7 @@ function downloadAttachment({ action }) {
       type: "net/att/start",
       payload: action.payload
     }),
-    after(5000, {
+    after(5000*mult, {
       type: "net/att/finish",
       payload: {
         ...action.payload,
@@ -36,7 +37,7 @@ function downloadAttachment({ action }) {
 function playFinishedAttachment({ action }) {
   return concat(
     after(0, { type: "player/play", payload: action.payload }),
-    after(5500, { type: "player/complete", payload: action.payload })
+    after(5500*mult, { type: "player/complete", payload: action.payload })
   );
 }
 
