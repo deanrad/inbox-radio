@@ -1,12 +1,12 @@
-const { after, from, concat, randomId } = require("rx-helper");
+const { after, concat, randomId } = require("rx-helper");
 
-const mult = (process.env.TIME_SCALE = 0.1);
 function getMatchingMsgHeadersFromSearch() {
   return concat(
     after(2000, { subject: "Friday gig" }),
     after(2000, { subject: "Great jam" })
   );
 }
+
 function getMessageBodyFromHeader({ action }) {
   return after(3000, {
     ...action.payload,
@@ -18,16 +18,20 @@ function getMessageBodyFromHeader({ action }) {
 }
 
 function getAttachmentIdsFromBody({ action }) {
-  return from(action.payload.att.map(att => ({ att })));
+  return concat(
+    ...action.payload.att.map((att, index) =>
+      after(index === 0 ? 1000 : 250, { att })
+    )
+  );
 }
 
 function downloadAttachment({ action }) {
   return concat(
-    after(1500, {
+    after(1000, {
       type: "net/att/start",
       payload: action.payload
     }),
-    after(5000 * mult, {
+    after(3000, {
       type: "net/att/finish",
       payload: {
         ...action.payload,
