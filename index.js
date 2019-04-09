@@ -21,7 +21,7 @@ const { agent, randomId } = require("rx-helper");
 const { zip, of, concat } = require("rxjs");
 const { concatMap } = require("rxjs/operators");
 const { format, indent } = require("./format");
-const { render, Color, Box } = require("ink");
+const { render, Color, Box, Text } = require("ink");
 const FancyBox = require("ink-box");
 
 const Spinner = require("ink-spinner").default;
@@ -58,31 +58,33 @@ agent.addFilter(({ action }) => {
 
 const View = ({ nowPlaying, queue, logs = [] }) => {
   return [
-    h(Box, n({ padding: 2, borderStyle: "round", flexDirection: "column" }), [
+    h(Box, n({ marginTop: 1, flexDirection: "column" }), [
       h(Box, n({}), [
         h(Color, n({ rgb: [210, 210, 255] }), "Now Playing: "),
         h(Color, n({ green: true }), nowPlaying.title)
       ]),
       h(Box, n({ width: 56, flexDirection: "column" }), [
-        "Queue",
-        [
-          ...queue.map(track => {
-            return h(Box, n(), [
-              h(
-                Box,
-                n({ width: 6 }),
-                track.status === "downloading"
-                  ? h(Spinner, n())
-                  : track.name === nowPlaying.title
-                  ? "➤"
-                  : track.status === "done"
-                  ? "✔︎"
-                  : " "
-              ),
-              h(Box, n({ width: 50 }), track.name)
-            ]);
-          })
-        ]
+        h(Text, n({ underline: true }), "Queue"),
+
+        ...queue.map(track => {
+          return h(Box, n(), [
+            h(
+              Box,
+              n({ width: 6 }),
+              track.status === "downloading"
+                ? h(Spinner, n())
+                : track.name === nowPlaying.title
+                ? "➤"
+                : track.status === "done"
+                ? "✔︎"
+                : " "
+            ),
+            h(Box, n({ width: 50 }), track.name)
+          ]);
+        }),
+        ...Array.from(new Array(Math.max(0, 3 - queue.length))).map(() =>
+          h(Box, n({ minHeight: 1 }))
+        )
       ])
     ]),
     h(Box, n({ width: 56, flexDirection: "column" }), ["Logs", ...logs])
