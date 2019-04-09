@@ -11,6 +11,10 @@
   "license": "ISC",
   "dependencies": {
     "googleapis": "27",
+    "ink": "^2.1.1",
+    "ink-box": "^1.0.0",
+    "ink-spinner": "^3.0.0",
+    "react": "^16.8.6",
     "rx-helper": "^1.0.1",
     "rxjs": "^6.4.0"
   }

@@ -17,10 +17,18 @@ A sample session:
 🔊 player/complete: att: jam2.mp3, bytes: 4cd26f0...
 
 */
-const { agent } = require("rx-helper");
+const { agent, randomId } = require("rx-helper");
 const { zip, of, concat } = require("rxjs");
 const { concatMap } = require("rxjs/operators");
 const { format, indent } = require("./format");
+const { render, Color, Box } = require("ink");
+const FancyBox = require("ink-box");
+
+const Spinner = require("ink-spinner").default;
+const React = require("react");
+const { createElement } = React;
+const h = createElement;
+
 const {
   getMatchingMsgHeadersFromSearch,
   getMessageBodyFromHeader,
@@ -29,9 +37,77 @@ const {
   playFinishedAttachment
 } = require("./implementations/stub");
 
+const n = (o = {}) => Object.assign(o, { key: randomId() });
+// Use ink to render (to console!)
+const props = {
+  nowPlaying: {
+    title: "---"
+  },
+  queue: [],
+  logs: []
+};
+
+// Log to console
+// agent.addFilter(({ action }) => {
+//   console.log(indent(action) + format(action));
+// });
+// Log to an object
 agent.addFilter(({ action }) => {
-  console.log(indent(action) + format(action));
+  props.logs.push(indent(action) + format(action));
 });
+
+const View = ({ nowPlaying, queue, logs = [] }) => {
+  return [
+    h(Box, n({ padding: 2, borderStyle: "round", flexDirection: "column" }), [
+      h(Box, n({}), [
+        h(Color, n({ rgb: [210, 210, 255] }), "Now Playing: "),
+        h(Color, n({ green: true }), nowPlaying.title)
+      ]),
+      h(Box, n({ width: 56, flexDirection: "column" }), [
+        "Queue",
+        [
+          ...queue.map(track => {
+            return h(Box, n(), [
+              h(
+                Box,
+                n({ width: 6 }),
+                track.status === "downloading"
+                  ? h(Spinner, n())
+                  : track.name === nowPlaying.title
+                  ? "➤"
+                  : track.status === "done"
+                  ? "✔︎"
+                  : " "
+              ),
+              h(Box, n({ width: 50 }), track.name)
+            ]);
+          })
+        ]
+      ])
+    ]),
+    h(Box, n({ width: 56, flexDirection: "column" }), ["Logs", ...logs])
+  ];
+};
+
+const updateView = () => {
+  render(h(View, props));
+  if (props.queue.length > 4) {
+    props.queue.shift();
+  }
+};
+agent.filter("player/play", ({ action: { payload: { att } } }) => {
+  props.nowPlaying.title = att;
+});
+agent.filter("player/complete", ({ action: { payload: { att } } }) => {
+  props.nowPlaying.title = "---";
+});
+agent.filter("net/att/start", ({ action: { payload: { att } } }) => {
+  props.queue = [...props.queue, { name: att, status: "downloading" }];
+});
+agent.filter("net/att/finish", ({ action: { payload: { att } } }) => {
+  props.queue.find(i => i.name === att).status = "done";
+});
+agent.filter(() => true, updateView);
 
 agent.on("user/search", getMatchingMsgHeadersFromSearch, {
   type: "goog/msg/header"
@@ -99,12 +175,11 @@ The old way - jam3.mp3 doesn't start downloading until jam2.mp3 has begun playin
 🔊 player/play: att: jam3.mp3, bytes: 587ddf4...
 🔊 player/complete: att: jam3.mp3, bytes: 587ddf4...
 */
-const downloads =  zip(
+const downloads = zip(
   agent.actionsOfType("goog/att/id"),
-  concat(
-    of({type: "player/play"}),
-    agent.actionsOfType("player/play")
-  ), (att, _) => ({ action: att })).pipe(concatMap(downloadAttachment));
+  concat(of({ type: "player/play" }), agent.actionsOfType("player/play")),
+  (att, _) => ({ action: att })
+).pipe(concatMap(downloadAttachment));
 agent.subscribe(downloads);
 
 agent.on("net/att/finish", playFinishedAttachment, {
@@ -114,6 +189,7 @@ agent.on("net/att/finish", playFinishedAttachment, {
 
 function start() {
   agent.process({ type: "user/search", payload: { q: "Greg" } });
+  updateView();
 }
 
 // WHAT
