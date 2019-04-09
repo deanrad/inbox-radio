@@ -73,8 +73,6 @@ const View = ({ nowPlaying, queue, logs = [] }) => {
               n({ width: 6 }),
               track.status === "downloading"
                 ? h(Spinner, n())
-                : track.name === nowPlaying.title
-                ? "➤"
                 : track.status === "done"
                 ? "✔︎"
                 : " "
