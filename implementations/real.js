@@ -26,8 +26,8 @@ async function getBody(id) {
 function getMatchingMsgHeadersFromSearch({ action }) {
   return new Observable(notify => {
     listMessages(action.payload).then(messages => {
-      (messages || []).forEach(
-        ({ id: messageId }) => notify.next({ messageId })
+      (messages || []).forEach(({ id: messageId }) =>
+        notify.next({ messageId })
       );
     });
   });
