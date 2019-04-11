@@ -31,10 +31,11 @@ const h = createElement;
 
 const {
   getMatchingMsgHeadersFromSearch,
-  getAudioAttachments
+  getAudioAttachments,
+  downloadAttachment
 } = require("./implementations/real");
 const {
-  downloadAttachment,
+  
   playFinishedAttachment
 } = require("./implementations/stub");
 

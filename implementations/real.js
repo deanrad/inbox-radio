@@ -1,5 +1,6 @@
 const { google, googleAuthClient } = require("./googleAuth");
 const { Observable } = require("rxjs");
+const atob = require("atob");
 
 const gApi = googleAuthClient.then(auth =>
   google.gmail({
@@ -24,7 +25,7 @@ function getMatchingMsgHeadersFromSearch({ action }) {
   return new Observable(notify => {
     listMessages(action.payload).then(messages => {
       (messages || []).forEach(
-        ({ id: messageId }, idx) => idx < 5 && notify.next({ messageId })
+        ({ id: messageId }, idx) => idx < 2 && notify.next({ messageId })
       );
     });
   });
@@ -34,31 +35,17 @@ function getAudioAttachments({ action }) {
   const { messageId } = action.payload;
   return new Observable(notify => {
     getBody(messageId).then(body => {
-      const { snippet } = body;
-
-      const { headers, parts } = body.payload;
-      const from = headers.filter(h => h.name === "From").map(h => h.value)[0];
-      const to = headers.filter(h => h.name === "To").map(h => h.value)[0];
-      const guid = headers
-        .filter(h => h.name === "Message-ID")
-        .map(h => h.value)[0];
+      const { parts } = body.payload;
 
       const audioAttachments = parts.filter(p => p.mimeType.match(/^audio/));
-      const date = new Date(
-        parseInt(body.internalDate, 10)
-      ).toLocaleDateString();
       audioAttachments.forEach(part => {
         const { filename, mimeType } = part;
         const attachId = part.body.attachmentId;
         // Communicate back to the agent
         notify.next({
-          guid,
           messageId,
-          from,
-          to,
-          snippet,
-          date,
           filename,
+          att: filename, // demo purposes
           mimeType,
           attachId
         });
@@ -66,10 +53,41 @@ function getAudioAttachments({ action }) {
     });
   });
 }
+async function googDownloadAtt({ attachId, messageId }) {
+  return (await (await gApi).users.messages.attachments.get({
+    id: attachId,
+    messageId,
+    userId: "me"
+  })).data;
+}
+function downloadAttachment({ action }) {
+  const { messageId, attachId, filename } = action.payload;
+
+  return new Observable(notify => {
+    notify.next({ type: "net/att/start", payload: { att: filename } });
+
+    googDownloadAtt({ attachId, messageId }).then(attachment => {
+      const { size, data } = attachment;
+      const bData = atob(urlDec(data));
+      const rawBytes = Uint8Array.from(bData, c => c.charCodeAt(0)).buffer;
+
+      notify.next({
+        type: "net/att/finish",
+        payload: { att: filename, messageId, attachId, size }
+      });
+    });
+  });
+}
+
+// Utility function to replace non-url compatible chars with base64 standard chars
+function urlDec(input) {
+  return input.replace(/-/g, "+").replace(/_/g, "/");
+}
 
 module.exports = {
   getMatchingMsgHeadersFromSearch,
-  getAudioAttachments
+  getAudioAttachments,
+  downloadAttachment
 };
 
 // listMessages({ q: "Greg" }).then(msg => console.log(msg));
