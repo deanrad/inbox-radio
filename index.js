@@ -175,7 +175,7 @@ The old way - jam3.mp3 doesn't start downloading until jam2.mp3 has begun playin
 */
 const downloads = zip(
   agent.actionsOfType("goog/att/id"),
-  concat(of({ type: "player/play" }), agent.actionsOfType("player/play")),
+  concat(prePlays, agent.actionsOfType("player/play")),
   (att, _) => ({ action: att })
 ).pipe(concatMap(downloadAttachment));
 agent.subscribe(downloads);

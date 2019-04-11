@@ -27,7 +27,7 @@ function getMatchingMsgHeadersFromSearch({ action }) {
   return new Observable(notify => {
     listMessages(action.payload).then(messages => {
       (messages || []).forEach(
-        ({ id: messageId }, idx) => idx < 2 && notify.next({ messageId })
+        ({ id: messageId }) => notify.next({ messageId })
       );
     });
   });
