@@ -7,7 +7,7 @@ function getMatchingMsgHeadersFromSearch() {
   );
 }
 
-function getMessageBodyFromHeader({ action }) {
+function getAudioAttachments({ action }) {
   return after(3000, {
     ...action.payload,
     att:
@@ -50,7 +50,7 @@ function playFinishedAttachment({ action }) {
 
 module.exports = {
   getMatchingMsgHeadersFromSearch,
-  getMessageBodyFromHeader,
+  getAudioAttachments,
   getAttachmentIdsFromBody,
   downloadAttachment,
   playFinishedAttachment

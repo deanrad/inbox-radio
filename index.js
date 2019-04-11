@@ -31,8 +31,9 @@ const h = createElement;
 
 const {
   getMatchingMsgHeadersFromSearch,
-  getMessageBodyFromHeader,
-  getAttachmentIdsFromBody,
+  getAudioAttachments
+} = require("./implementations/real");
+const {
   downloadAttachment,
   playFinishedAttachment
 } = require("./implementations/stub");
@@ -115,11 +116,7 @@ agent.on("user/search", getMatchingMsgHeadersFromSearch, {
   type: "goog/msg/header"
 });
 
-agent.on("goog/msg/header", getMessageBodyFromHeader, {
-  type: "goog/msg/body"
-});
-
-agent.on("goog/msg/body", getAttachmentIdsFromBody, {
+agent.on("goog/msg/header", getAudioAttachments, {
   type: "goog/att/id"
 });
 
@@ -191,7 +188,10 @@ agent.on("net/att/finish", playFinishedAttachment, {
 
 function start() {
   require("clear")();
-  agent.process({ type: "user/search", payload: { q: "Greg" } });
+  agent.process({
+    type: "user/search",
+    payload: { q: "Greg {filename:mp3 filename:wav filename:m4a}" }
+  });
   updateView();
 }
 
