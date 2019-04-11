@@ -32,12 +32,10 @@ const h = createElement;
 const {
   getMatchingMsgHeadersFromSearch,
   getAudioAttachments,
-  downloadAttachment
-} = require("./implementations/real");
-const {
-  
+  downloadAttachment,
   playFinishedAttachment
-} = require("./implementations/stub");
+} = require("./implementations/real");
+const {} = require("./implementations/stub");
 
 const n = (o = {}) => Object.assign(o, { key: randomId() });
 // Use ink to render (to console!)
@@ -189,9 +187,11 @@ agent.on("net/att/finish", playFinishedAttachment, {
 
 function start() {
   require("clear")();
+  const search = process.argv[2] || processional;
+  const query = `${search} {filename:mp3 filename:wav filename:m4a}`;
   agent.process({
     type: "user/search",
-    payload: { q: "Greg {filename:mp3 filename:wav filename:m4a}" }
+    payload: { q: query }
   });
   updateView();
 }

@@ -1,6 +1,8 @@
 const { google, googleAuthClient } = require("./googleAuth");
 const { Observable } = require("rxjs");
 const atob = require("atob");
+const tempWrite = require("temp-write");
+const player = require("play-sound")();
 
 const gApi = googleAuthClient.then(auth =>
   google.gmail({
@@ -39,13 +41,12 @@ function getAudioAttachments({ action }) {
 
       const audioAttachments = parts.filter(p => p.mimeType.match(/^audio/));
       audioAttachments.forEach(part => {
-        const { filename, mimeType } = part;
+        const { filename: att, mimeType } = part;
         const attachId = part.body.attachmentId;
         // Communicate back to the agent
         notify.next({
           messageId,
-          filename,
-          att: filename, // demo purposes
+          att,
           mimeType,
           attachId
         });
@@ -61,19 +62,19 @@ async function googDownloadAtt({ attachId, messageId }) {
   })).data;
 }
 function downloadAttachment({ action }) {
-  const { messageId, attachId, filename } = action.payload;
+  const { messageId, attachId, att } = action.payload;
 
   return new Observable(notify => {
-    notify.next({ type: "net/att/start", payload: { att: filename } });
+    notify.next({ type: "net/att/start", payload: { att } });
 
     googDownloadAtt({ attachId, messageId }).then(attachment => {
       const { size, data } = attachment;
       const bData = atob(urlDec(data));
-      const rawBytes = Uint8Array.from(bData, c => c.charCodeAt(0)).buffer;
-
+      const rawBytes = Uint8Array.from(bData, c => c.charCodeAt(0));
+      const localFile = tempWrite.sync(rawBytes, att);
       notify.next({
         type: "net/att/finish",
-        payload: { att: filename, messageId, attachId, size }
+        payload: { att, messageId, attachId, size, localFile }
       });
     });
   });
@@ -84,10 +85,25 @@ function urlDec(input) {
   return input.replace(/-/g, "+").replace(/_/g, "/");
 }
 
+function playFinishedAttachment({ action }) {
+  const { localFile } = action.payload;
+  return new Observable(notify => {
+    notify.next({ type: "player/play", payload: action.payload });
+
+    const audio = player.play(localFile, () => {
+      notify.next({ type: "player/stop", payload: action.payload });
+      notify.complete();
+    });
+
+    return () => audio.kill();
+  });
+}
+
 module.exports = {
   getMatchingMsgHeadersFromSearch,
   getAudioAttachments,
-  downloadAttachment
+  downloadAttachment,
+  playFinishedAttachment
 };
 
 // listMessages({ q: "Greg" }).then(msg => console.log(msg));
