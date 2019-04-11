@@ -121,17 +121,20 @@ agent.on("goog/msg/header", getAudioAttachments, {
   type: "goog/att/id"
 });
 
-agent.on("goog/att/id", downloadAttachment, {
-  processResults: true,
-  concurrency: "serial"
-});
-// const prePlays = from([{ type: "player/play" }, { type: "player/play" }]);
-// const downloads = zip(
-//   agent.actionsOfType("goog/att/id"),
-//   concat(prePlays, agent.actionsOfType("player/play")),
-//   (att, _) => ({ action: att })
-// ).pipe(concatMap(downloadAttachment));
-// agent.subscribe(downloads);
+// Option 1 - download attachments as you discover them (serially)
+// agent.on("goog/att/id", downloadAttachment, {
+//   processResults: true,
+//   concurrency: "serial"
+// });
+
+// Option 2 - Limit how far you can get ahead using some RxJS magic
+const prePlays = from(Array(2));
+const downloads = zip(
+  agent.actionsOfType("goog/att/id"),
+  concat(prePlays, agent.actionsOfType("player/play")),
+  (att, _) => ({ action: att })
+).pipe(concatMap(downloadAttachment));
+agent.subscribe(downloads);
 
 agent.on("net/att/finish", playFinishedAttachment, {
   processResults: true,
@@ -140,7 +143,7 @@ agent.on("net/att/finish", playFinishedAttachment, {
 
 function start() {
   require("clear")();
-  const search = process.argv[2] || processional;
+  const search = process.argv[2] || "wedding";
   const query = `${search} {filename:mp3 filename:wav filename:m4a}`;
   agent.process({
     type: "user/search",

@@ -67,16 +67,21 @@ function downloadAttachment({ action }) {
   return new Observable(notify => {
     notify.next({ type: "net/att/start", payload: { att } });
 
-    googDownloadAtt({ attachId, messageId }).then(attachment => {
-      const { size, data } = attachment;
-      const bData = atob(urlDec(data));
-      const rawBytes = Uint8Array.from(bData, c => c.charCodeAt(0));
-      const localFile = tempWrite.sync(rawBytes, att);
-      notify.next({
-        type: "net/att/finish",
-        payload: { att, messageId, attachId, size, localFile }
+    googDownloadAtt({ attachId, messageId })
+      .then(attachment => {
+        const { size, data } = attachment;
+        const bData = atob(urlDec(data));
+        const rawBytes = Uint8Array.from(bData, c => c.charCodeAt(0));
+        const localFile = tempWrite.sync(rawBytes, att);
+        notify.next({
+          type: "net/att/finish",
+          payload: { att, messageId, attachId, size, localFile }
+        });
+        notify.complete();
+      })
+      .catch(e => {
+        notify.next({ type: "net/att/error", payload: e });
       });
-    });
   });
 }
 
