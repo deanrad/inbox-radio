@@ -17,13 +17,11 @@ A sample session:
 🔊 player/complete: att: jam2.mp3, bytes: 4cd26f0...
 
 */
-const { agent, randomId } = require("rx-helper");
+const { agent } = require("rx-helper");
 const { zip, of, from, concat } = require("rxjs");
 const { concatMap } = require("rxjs/operators");
 const { format, indent } = require("./format");
-const { render, Color, Box, Text } = require("ink");
-
-const Spinner = require("ink-spinner").default;
+const { render } = require("ink");
 const React = require("react");
 const { createElement } = React;
 const h = createElement;
@@ -36,7 +34,8 @@ const {
 } = require("./implementations/real");
 const {} = require("./implementations/stub");
 
-const n = (o = {}) => Object.assign(o, { key: randomId() });
+const { View } = require("./components/View");
+
 // Use ink to render (to console!)
 const props = {
   nowPlaying: {
@@ -54,44 +53,6 @@ const props = {
 agent.addFilter(({ action }) => {
   props.logs.push(indent(action) + format(action));
 });
-
-const View = ({ nowPlaying, queue, logs = [] }) => {
-  return [
-    h(Box, n({ marginTop: 1, flexDirection: "column" }), [
-      h(Box, n({}), [
-        h(Color, n({ rgb: [90, 90, 90] }), "Now Playing: "),
-        nowPlaying.title === "---"
-          ? h(Color, n({ rgb: [90, 90, 90] }), nowPlaying.title)
-          : h(Color, n(), nowPlaying.title)
-      ]),
-      h(Box, n({ width: 56, flexDirection: "column" }), [
-        h(Text, n({ underline: true }), "Queue"),
-
-        ...queue.map(track => {
-          return h(Box, n(), [
-            h(
-              Box,
-              n({ width: 6 }),
-              track.status === "downloading"
-                ? h(Spinner, n())
-                : track.status === "done"
-                ? "✔︎"
-                : " "
-            ),
-            h(Box, n({ width: 50 }), track.name)
-          ]);
-        }),
-        ...Array.from(new Array(Math.max(0, 4 - queue.length))).map(() =>
-          h(Box, n({ minHeight: 1 }))
-        )
-      ])
-    ]),
-    h(Box, n({ width: 56, flexDirection: "column" }), [
-      "Logs",
-      ...logs.map(log => log.substr(0, 80))
-    ])
-  ];
-};
 
 const updateView = () => {
   render(h(View, props));
@@ -122,16 +83,16 @@ agent.on("goog/msg/header", getAudioAttachments, {
 });
 
 // Option 1 - download attachments as you discover them (serially)
-// agent.on("goog/att/id", downloadAttachment, {
-//   processResults: true,
-//   concurrency: "serial"
-// });
+agent.on("goog/att/id", downloadAttachment, {
+  processResults: true,
+  concurrency: "serial"
+});
 
 // Option 2 - Limit how far you can get ahead using some RxJS magic
-const prePlays = from(Array(2));
+const prePlays = n => from(Array(n));
 const downloads = zip(
   agent.actionsOfType("goog/att/id"),
-  concat(prePlays, agent.actionsOfType("player/play")),
+  concat(prePlays(2), agent.actionsOfType("player/play")),
   (att, _) => ({ action: att })
 ).pipe(concatMap(downloadAttachment));
 agent.subscribe(downloads);

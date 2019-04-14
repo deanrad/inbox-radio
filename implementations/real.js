@@ -37,7 +37,12 @@ function getAudioAttachments({ action }) {
   const { messageId } = action.payload;
   return new Observable(notify => {
     getBody(messageId).then(body => {
-      const { parts } = body.payload;
+      const { headers, parts } = body.payload;
+      const { snippet } = body;
+
+      const from = headers.filter(h => h.name === "From").map(h => h.value)[0];
+      const to = headers.filter(h => h.name === "To").map(h => h.value)[0];
+      // const guid = headers.filter(h => h.name === "Message-ID").map(h => h.value)[0]
 
       const audioAttachments = parts.filter(p => p.mimeType.match(/^audio/));
       audioAttachments.forEach(part => {
@@ -45,10 +50,13 @@ function getAudioAttachments({ action }) {
         const attachId = part.body.attachmentId;
         // Communicate back to the agent
         notify.next({
-          messageId,
           att,
+          snippet,
+          from,
+          messageId,
           mimeType,
-          attachId
+          attachId,
+          to
         });
       });
     });
