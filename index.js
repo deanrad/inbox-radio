@@ -1,3 +1,8 @@
+require("@babel/register")({
+  ignore: [/(node_modules)/],
+  presets: ["@babel/preset-env", "@babel/preset-react"]
+});
+
 /*
 A sample session:
 👩🏽‍💻 user/search: q: Greg
@@ -18,13 +23,7 @@ A sample session:
 
 */
 const { agent } = require("rx-helper");
-const { zip, of, from, concat } = require("rxjs");
-const { concatMap } = require("rxjs/operators");
 const { format, indent } = require("./format");
-const { render } = require("ink");
-const React = require("react");
-const { createElement } = React;
-const h = createElement;
 
 // const {} = require("./implementations/real");
 const {
@@ -34,16 +33,7 @@ const {
   playFinishedAttachment
 } = require("./implementations/stub");
 
-const { View } = require("./components/View");
-
-// Use ink to render (to console!)
-const props = {
-  nowPlaying: {
-    title: "---"
-  },
-  queue: [],
-  logs: []
-};
+const { props, updateView } = require("./components/View");
 
 // Log to console
 // agent.addFilter(({ action }) => {
@@ -54,12 +44,6 @@ agent.addFilter(({ action }) => {
   props.logs.push(indent(action) + format(action));
 });
 
-const updateView = () => {
-  render(h(View, props));
-  if (props.queue.length > 4) {
-    props.queue.shift();
-  }
-};
 agent.filter("player/play", ({ action: { payload: { att } } }) => {
   props.nowPlaying.title = att;
 });

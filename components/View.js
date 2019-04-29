@@ -1,7 +1,7 @@
 const React = require("react");
 const { createElement } = React;
 const h = createElement;
-const { Color, Box, Text } = require("ink");
+const { Color, Box, Text, render } = require("ink");
 const Spinner = require("ink-spinner").default;
 const { randomId } = require("rx-helper");
 
@@ -10,6 +10,7 @@ const { randomId } = require("rx-helper");
 
 // util to add newKey
 const n = (o = {}) => Object.assign(o, { key: randomId() });
+
 
 const View = ({ nowPlaying, queue, logs = [] }) => {
   return [
@@ -49,6 +50,22 @@ const View = ({ nowPlaying, queue, logs = [] }) => {
   ];
 };
 
+const props = {
+  nowPlaying: {
+    title: "---"
+  },
+  queue: [],
+  logs: []
+};
+
+const updateView = () => {
+  render(h(View, props));
+  if (props.queue.length > 4) {
+    props.queue.shift();
+  }
+};
+
 module.exports = {
-  View
+  props,
+  updateView
 };
