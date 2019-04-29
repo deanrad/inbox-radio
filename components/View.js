@@ -5,49 +5,49 @@ const { Color, Box, Text, render } = require("ink");
 const Spinner = require("ink-spinner").default;
 const { randomId } = require("rx-helper");
 
-// LEFTOFF Use babel to make this less ugly per:
-// https://flaviocopes.com/react-server-side-rendering/
-
-// util to add newKey
-const n = (o = {}) => Object.assign(o, { key: randomId() });
-
-
 const View = ({ nowPlaying, queue, logs = [] }) => {
-  return [
-    h(Box, n({ marginTop: 1, flexDirection: "column" }), [
-      h(Box, n({}), [
-        h(Color, n({ rgb: [90, 90, 90] }), "Now Playing: "),
-        nowPlaying.title === "---"
-          ? h(Color, n({ rgb: [90, 90, 90] }), nowPlaying.title)
-          : h(Color, n(), nowPlaying.title)
-      ]),
-      h(Box, n({ width: 56, flexDirection: "column" }), [
-        h(Text, n({ underline: true }), "Queue"),
-
-        ...queue.map(track => {
-          return h(Box, n(), [
-            h(
-              Box,
-              n({ width: 6 }),
-              track.status === "downloading"
-                ? h(Spinner, n())
-                : track.status === "done"
-                ? "✔︎"
-                : " "
-            ),
-            h(Box, n({ width: 50 }), track.name)
-          ]);
-        }),
-        ...Array.from(new Array(Math.max(0, 4 - queue.length))).map(() =>
-          h(Box, n({ minHeight: 1 }))
-        )
-      ])
-    ]),
-    h(Box, n({ width: 56, flexDirection: "column" }), [
-      "Logs",
-      ...logs.map(log => log.substr(0, 80))
-    ])
-  ];
+  return (
+    <Box key={randomId()} marginTop={1} flexDirection="column">
+      <Box key={randomId()}>
+        <Color rgb={[90, 90, 90]} key={randomId()}>
+          Now Playing{" "}
+        </Color>
+        <Color rgb={nowPlaying.title === "---" ? [90, 90, 90] : null}>
+          {nowPlaying.title}
+        </Color>
+      </Box>
+      <Box key={randomId()} width={56} flexDirection="column">
+        <Text key={randomId()} underline={true}>
+          Queue
+        </Text>
+        {queue.map(track => {
+          return (
+            <Box key={randomId()}>
+              <Box key={randomId()} width={6}>
+                <Choose>
+                  <When condition={track.status === "downloading"}>
+                    <Spinner key={randomId()} />
+                  </When>
+                  <When condition={track.status === "done"}>✔︎</When>
+                  <Otherwise> </Otherwise>
+                </Choose>
+              </Box>
+              <Box key={randomId()} width={50}>
+                {track.name}
+              </Box>
+            </Box>
+          );
+        })}
+        {Array.from(new Array(Math.max(0, 4 - queue.length))).map(() => {
+          return <Box key={randomId()} minHeight={1} />;
+        })}
+      </Box>
+      <Box key={randomId()} minHeight={1}>
+        Logs
+        {logs.map(log => log.substr(0, 80)).join("\n")}
+      </Box>
+    </Box>
+  );
 };
 
 const props = {
