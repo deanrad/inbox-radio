@@ -26,13 +26,13 @@ const React = require("react");
 const { createElement } = React;
 const h = createElement;
 
+// const {} = require("./implementations/real");
 const {
   getMatchingMsgHeadersFromSearch,
   getAudioAttachments,
   downloadAttachment,
   playFinishedAttachment
-} = require("./implementations/real");
-const {} = require("./implementations/stub");
+} = require("./implementations/stub");
 
 const { View } = require("./components/View");
 
@@ -89,13 +89,13 @@ agent.on("goog/att/id", downloadAttachment, {
 });
 
 // Option 2 - Limit how far you can get ahead using some RxJS magic
-const prePlays = n => from(Array(n));
-const downloads = zip(
-  agent.actionsOfType("goog/att/id"),
-  concat(prePlays(2), agent.actionsOfType("player/play")),
-  (att, _) => ({ action: att })
-).pipe(concatMap(downloadAttachment));
-agent.subscribe(downloads);
+// const prePlays = n => from(Array(n));
+// const downloads = zip(
+//   agent.actionsOfType("goog/att/id"),
+//   concat(prePlays(2), agent.actionsOfType("player/play")),
+//   (att, _) => ({ action: att })
+// ).pipe(concatMap(downloadAttachment));
+// agent.subscribe(downloads);
 
 agent.on("net/att/finish", playFinishedAttachment, {
   processResults: true,

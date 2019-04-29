@@ -5,6 +5,9 @@ const { Color, Box, Text } = require("ink");
 const Spinner = require("ink-spinner").default;
 const { randomId } = require("rx-helper");
 
+// LEFTOFF Use babel to make this less ugly per:
+// https://flaviocopes.com/react-server-side-rendering/
+
 // util to add newKey
 const n = (o = {}) => Object.assign(o, { key: randomId() });
 

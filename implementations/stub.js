@@ -1,4 +1,4 @@
-const { after, concat, randomId } = require("rx-helper");
+const { after, empty, concat, randomId } = require("rx-helper");
 
 function getMatchingMsgHeadersFromSearch() {
   return concat(
@@ -8,21 +8,11 @@ function getMatchingMsgHeadersFromSearch() {
 }
 
 function getAudioAttachments({ action }) {
-  return after(3000, {
-    ...action.payload,
-    att:
-      action.payload.subject === "Great jam"
-        ? ["jam.mp3", "jam2.mp3", "jam3.mp3"]
-        : []
-  });
-}
-
-function getAttachmentIdsFromBody({ action }) {
-  return concat(
-    ...action.payload.att.map((att, index) =>
-      after(index === 0 ? 1000 : 250, { att })
-    )
-  );
+  if (action.payload.subject !== "Great jam") {
+    return empty();
+  }
+  const atts = ["jam.mp3", "jam2.mp3", "jam3.mp3"];
+  return concat(...atts.map(att => after(300, { att })));
 }
 
 function downloadAttachment({ action }) {
@@ -51,7 +41,6 @@ function playFinishedAttachment({ action }) {
 module.exports = {
   getMatchingMsgHeadersFromSearch,
   getAudioAttachments,
-  getAttachmentIdsFromBody,
   downloadAttachment,
   playFinishedAttachment
 };
