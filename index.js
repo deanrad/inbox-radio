@@ -3,6 +3,7 @@ require("@babel/register")({
   presets: ["@babel/preset-env", "@babel/preset-react"],
   plugins: ["babel-plugin-jsx-control-statements"]
 });
+require("babel-polyfill");
 
 /*
 A sample session:
@@ -26,13 +27,20 @@ A sample session:
 const { agent } = require("rx-helper");
 const { format, indent } = require("./format");
 
-// const {} = require("./implementations/real");
+let implementation;
+
+if (process.env.DEMO === "1") {
+  implementation = require("./implementations/stub");
+} else {
+  implementation = require("./implementations/real");
+}
+
 const {
   getMatchingMsgHeadersFromSearch,
   getAudioAttachments,
   downloadAttachment,
   playFinishedAttachment
-} = require("./implementations/stub");
+} = implementation;
 
 const { props, updateView } = require("./components/View");
 

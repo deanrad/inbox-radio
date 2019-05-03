@@ -42,9 +42,13 @@ const View = ({ nowPlaying, queue, logs = [] }) => {
           return <Box key={randomId()} minHeight={1} />;
         })}
       </Box>
-      <Box key={randomId()} minHeight={1}>
-        Logs
-        {logs.map(log => log.substr(0, 80)).join("\n")}
+      <Box key={randomId()} minHeight={1} flexDirection="column">
+        <Text key={randomId()} underline={true}>
+          Logs
+        </Text>
+        {logs.map(log => (
+          <Box key={randomId()}>{log.substr(0, 80)}</Box>
+        ))}
       </Box>
     </Box>
   );
