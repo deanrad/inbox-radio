@@ -28,8 +28,8 @@ const View = ({ nowPlaying, queue, logs = [] }) => {
                   <When condition={track.status === "downloading"}>
                     <Spinner key={randomId()} />
                   </When>
-                  <When condition={track.status === "done"}>✔︎</When>
-                  <Otherwise> </Otherwise>
+                  <When condition={track.status === "done"}>{"✔ "}</When>
+                  <Otherwise>◦</Otherwise>
                 </Choose>
               </Box>
               <Box key={randomId()} width={50}>

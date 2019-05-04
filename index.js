@@ -59,8 +59,11 @@ agent.filter("player/play", ({ action: { payload: { att } } }) => {
 agent.filter("player/complete", ({ action: { payload: { att } } }) => {
   props.nowPlaying.title = "---";
 });
+agent.filter("goog/att/id", ({ action: { payload: { att } } }) => {
+  props.queue = [...props.queue, { name: att, status: null }];
+});
 agent.filter("net/att/start", ({ action: { payload: { att } } }) => {
-  props.queue = [...props.queue, { name: att, status: "downloading" }];
+  props.queue.find(i => i.name === att).status = "downloading";
 });
 agent.filter("net/att/finish", ({ action: { payload: { att } } }) => {
   props.queue.find(i => i.name === att).status = "done";

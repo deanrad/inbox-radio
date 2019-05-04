@@ -39,7 +39,7 @@ function downloadAttachment({ action }) {
 
 function playFinishedAttachment({ action }) {
   return concat(
-    after(0, { type: "player/play", payload: action.payload }),
+    after(500 * SCALE, { type: "player/play", payload: action.payload }),
     after(5500 * SCALE, { type: "player/complete", payload: action.payload })
   );
 }
