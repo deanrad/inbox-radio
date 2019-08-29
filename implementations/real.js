@@ -23,9 +23,9 @@ async function getBody(id) {
   return (await (await gApi).users.messages.get({ userId: "me", id })).data;
 }
 
-function getMatchingMsgHeadersFromSearch({ action }) {
+function getMatchingMsgHeadersFromSearch({ event }) {
   return new Observable(notify => {
-    listMessages(action.payload).then(messages => {
+    listMessages(event.payload).then(messages => {
       (messages || []).forEach(({ id: messageId }) =>
         notify.next({ messageId })
       );
@@ -33,8 +33,8 @@ function getMatchingMsgHeadersFromSearch({ action }) {
   });
 }
 
-function getAudioAttachments({ action }) {
-  const { messageId } = action.payload;
+function getAudioAttachments({ event }) {
+  const { messageId } = event.payload;
   return new Observable(notify => {
     getBody(messageId).then(body => {
       const { headers, parts } = body.payload;
@@ -69,8 +69,8 @@ async function googDownloadAtt({ attachId, messageId }) {
     userId: "me"
   })).data;
 }
-function downloadAttachment({ action }) {
-  const { messageId, attachId, att } = action.payload;
+function downloadAttachment({ event }) {
+  const { messageId, attachId, att } = event.payload;
 
   return new Observable(notify => {
     notify.next({ type: "net/att/start", payload: { att } });
@@ -98,13 +98,13 @@ function urlDec(input) {
   return input.replace(/-/g, "+").replace(/_/g, "/");
 }
 
-function playFinishedAttachment({ action }) {
-  const { localFile } = action.payload;
+function playFinishedAttachment({ event }) {
+  const { localFile } = event.payload;
   return new Observable(notify => {
-    notify.next({ type: "player/play", payload: action.payload });
+    notify.next({ type: "player/play", payload: event.payload });
 
     const audio = player.play(localFile, () => {
-      notify.next({ type: "player/stop", payload: action.payload });
+      notify.next({ type: "player/stop", payload: event.payload });
       notify.complete();
     });
 

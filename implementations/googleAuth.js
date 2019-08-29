@@ -49,11 +49,49 @@ function authorize(credentials, callback) {
  * @param {google.auth.OAuth2} oAuth2Client The OAuth2 client to get token for.
  * @param {getEventsCallback} callback The callback for the authorized client.
  */
-function getNewToken(oAuth2Client, callback) {
+async function getNewToken(oAuth2Client, callback) {
   const authUrl = oAuth2Client.generateAuthUrl({
     access_type: "offline",
     scope: SCOPES
   });
+  const express = require("express");
+  const app = express();
+
+  let oAuthListener;
+
+  // DUPE code yuk
+  app.get("/", (req, res) => {
+    const {
+      query: { code }
+    } = req;
+    if (!code) return res.json({});
+
+    oAuth2Client.getToken(code, (err, token) => {
+      if (err) return console.error("Error retrieving access token", err);
+      oAuth2Client.setCredentials(token);
+      // Store the token to disk for later program executions
+      fs.writeFile(TOKEN_PATH, JSON.stringify(token), err => {
+        if (err) return console.error(err);
+        console.log("Token stored to", TOKEN_PATH);
+      });
+      oAuthListener.close(() => {
+        console.log("🌎 ==> oAuthListener got code and closed - thanks!");
+      });
+      callback(oAuth2Client);
+    });
+
+    res.json({ msg: "Done! Check your console" });
+  });
+  const http = require("http").Server(app);
+  const PORT = process.env.PORT || 3120;
+  const listening = new Promise(resolve => {
+    oAuthListener = http.listen(PORT, function() {
+      console.log(`🌎 ==> oAuthListener now on port ${PORT}!`);
+      resolve();
+    });
+  });
+  await listening;
+
   console.log("Authorize this app by visiting this url:", authUrl);
   const rl = readline.createInterface({
     input: process.stdin,

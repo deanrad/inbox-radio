@@ -9,8 +9,8 @@ function getMatchingMsgHeadersFromSearch() {
   );
 }
 
-function getAudioAttachments({ action }) {
-  if (action.payload.subject !== "Great jam") {
+function getAudioAttachments({ event }) {
+  if (event.payload.subject !== "Great jam") {
     return empty();
   }
   const atts = ["jam.mp3", "jam2.mp3", "jam3.mp3"];
@@ -21,26 +21,26 @@ function getAudioAttachments({ action }) {
   );
 }
 
-function downloadAttachment({ action }) {
+function downloadAttachment({ event }) {
   return concat(
     after(1000 * SCALE, {
       type: "net/att/start",
-      payload: action.payload
+      payload: event.payload
     }),
     after(3000 * SCALE, {
       type: "net/att/finish",
       payload: {
-        ...action.payload,
+        ...event.payload,
         bytes: randomId() + "..."
       }
     })
   );
 }
 
-function playFinishedAttachment({ action }) {
+function playFinishedAttachment({ event }) {
   return concat(
-    after(500 * SCALE, { type: "player/play", payload: action.payload }),
-    after(5500 * SCALE, { type: "player/complete", payload: action.payload })
+    after(500 * SCALE, { type: "player/play", payload: event.payload }),
+    after(5500 * SCALE, { type: "player/complete", payload: event.payload })
   );
 }
 

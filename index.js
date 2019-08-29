@@ -45,27 +45,27 @@ const {
 const { props, updateView } = require("./components/View");
 
 // Log to console
-// agent.addFilter(({ action }) => {
-//   console.log(indent(action) + format(action));
+// agent.addFilter(({ event }) => {
+//   console.log(indent(event) + format(event));
 // });
 // Log to an object
-agent.addFilter(({ action }) => {
-  props.logs.push(indent(action) + format(action));
+agent.spy(({ event }) => {
+  props.logs.push(indent(event) + format(event));
 });
 
-agent.filter("player/play", ({ action: { payload: { att } } }) => {
+agent.filter("player/play", ({ event: { payload: { att } } }) => {
   props.nowPlaying.title = att;
 });
-agent.filter("player/complete", ({ action: { payload: { att } } }) => {
+agent.filter("player/complete", ({ event: { payload: { att } } }) => {
   props.nowPlaying.title = "---";
 });
-agent.filter("goog/att/id", ({ action: { payload: { att } } }) => {
+agent.filter("goog/att/id", ({ event: { payload: { att } } }) => {
   props.queue = [...props.queue, { name: att, status: null }];
 });
-agent.filter("net/att/start", ({ action: { payload: { att } } }) => {
+agent.filter("net/att/start", ({ event: { payload: { att } } }) => {
   props.queue.find(i => i.name === att).status = "downloading";
 });
-agent.filter("net/att/finish", ({ action: { payload: { att } } }) => {
+agent.filter("net/att/finish", ({ event: { payload: { att } } }) => {
   props.queue.find(i => i.name === att).status = "done";
 });
 agent.filter(() => true, updateView);
@@ -87,9 +87,9 @@ agent.on("goog/att/id", downloadAttachment, {
 // Option 2 - Limit how far you can get ahead using some RxJS magic
 // const prePlays = n => from(Array(n));
 // const downloads = zip(
-//   agent.actionsOfType("goog/att/id"),
-//   concat(prePlays(2), agent.actionsOfType("player/play")),
-//   (att, _) => ({ action: att })
+//   agent.eventsOfType("goog/att/id"),
+//   concat(prePlays(2), agent.eventsOfType("player/play")),
+//   (att, _) => ({ event: att })
 // ).pipe(concatMap(downloadAttachment));
 // agent.subscribe(downloads);
 
