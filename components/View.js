@@ -3,7 +3,7 @@ const { createElement } = React;
 const h = createElement;
 const { Color, Box, Text, render } = require("ink");
 const Spinner = require("ink-spinner").default;
-const { randomId } = require("rx-helper");
+const { randomId } = require("polyrhythm");
 
 const View = ({ nowPlaying, queue, logs = [] }) => {
   return (
@@ -20,7 +20,7 @@ const View = ({ nowPlaying, queue, logs = [] }) => {
         <Text key={randomId()} underline={true}>
           Queue
         </Text>
-        {queue.map(track => {
+        {queue.map((track) => {
           return (
             <Box key={randomId()}>
               <Box key={randomId()} width={6}>
@@ -46,7 +46,7 @@ const View = ({ nowPlaying, queue, logs = [] }) => {
         <Text key={randomId()} underline={true}>
           Logs
         </Text>
-        {logs.map(log => (
+        {logs.map((log) => (
           <Box key={randomId()}>{log.substr(0, 80)}</Box>
         ))}
       </Box>
@@ -56,10 +56,10 @@ const View = ({ nowPlaying, queue, logs = [] }) => {
 
 const props = {
   nowPlaying: {
-    title: "---"
+    title: "---",
   },
   queue: [],
-  logs: []
+  logs: [],
 };
 
 const updateView = () => {
@@ -71,5 +71,5 @@ const updateView = () => {
 
 module.exports = {
   props,
-  updateView
+  updateView,
 };

@@ -1,20 +1,21 @@
 const { google, googleAuthClient } = require("./googleAuth");
 const { Observable } = require("rxjs");
+const { trigger } = require("polyrhythm");
 const atob = require("atob");
 const tempWrite = require("temp-write");
 const player = require("play-sound")();
 
-const gApi = googleAuthClient.then(auth =>
+const gApi = googleAuthClient.then((auth) =>
   google.gmail({
     version: "v1",
-    auth
+    auth,
   })
 );
 
 async function listMessages(query) {
   const res = await (await gApi).users.messages.list({
     userId: "me",
-    ...query
+    ...query,
   });
   return res.data.messages;
 }
@@ -23,72 +24,82 @@ async function getBody(id) {
   return (await (await gApi).users.messages.get({ userId: "me", id })).data;
 }
 
-function getMatchingMsgHeadersFromSearch({ event }) {
-  return new Observable(notify => {
-    listMessages(event.payload).then(messages => {
+function getMatchingMsgHeadersFromSearch({ payload }) {
+  return new Observable((notify) => {
+    listMessages(payload).then((messages) => {
       (messages || []).forEach(({ id: messageId }) =>
-        notify.next({ messageId })
+        trigger("goog/msg/header", { messageId })
       );
+      notify.complete();
     });
   });
 }
 
-function getAudioAttachments({ event }) {
-  const { messageId } = event.payload;
-  return new Observable(notify => {
-    getBody(messageId).then(body => {
+function getAudioAttachments({ payload }) {
+  const { messageId } = payload;
+  return new Observable((notify) => {
+    getBody(messageId).then((body) => {
       const { headers, parts } = body.payload;
       const { snippet } = body;
 
-      const from = headers.filter(h => h.name === "From").map(h => h.value)[0];
-      const to = headers.filter(h => h.name === "To").map(h => h.value)[0];
+      const from = headers
+        .filter((h) => h.name === "From")
+        .map((h) => h.value)[0];
+      const to = headers.filter((h) => h.name === "To").map((h) => h.value)[0];
       // const guid = headers.filter(h => h.name === "Message-ID").map(h => h.value)[0]
 
-      const audioAttachments = parts.filter(p => p.mimeType.match(/^audio/));
-      audioAttachments.forEach(part => {
+      const audioAttachments = parts.filter((p) => p.mimeType.match(/^audio/));
+      audioAttachments.forEach((part) => {
         const { filename: att, mimeType } = part;
         const attachId = part.body.attachmentId;
         // Communicate back to the agent
-        notify.next({
+        trigger("goog/att/id", {
           att,
           snippet,
           from,
           messageId,
           mimeType,
           attachId,
-          to
+          to,
         });
       });
+      notify.complete();
     });
   });
 }
 async function googDownloadAtt({ attachId, messageId }) {
-  return (await (await gApi).users.messages.attachments.get({
-    id: attachId,
-    messageId,
-    userId: "me"
-  })).data;
+  return (
+    await (await gApi).users.messages.attachments.get({
+      id: attachId,
+      messageId,
+      userId: "me",
+    })
+  ).data;
 }
-function downloadAttachment({ event }) {
-  const { messageId, attachId, att } = event.payload;
 
-  return new Observable(notify => {
-    notify.next({ type: "net/att/start", payload: { att } });
+function downloadAttachment({ payload }) {
+  const { messageId, attachId, att } = payload;
+
+  return new Observable((notify) => {
+    trigger("net/att/start", { att });
 
     googDownloadAtt({ attachId, messageId })
-      .then(attachment => {
+      .then((attachment) => {
         const { size, data } = attachment;
         const bData = atob(urlDec(data));
-        const rawBytes = Uint8Array.from(bData, c => c.charCodeAt(0));
+        const rawBytes = Uint8Array.from(bData, (c) => c.charCodeAt(0));
         const localFile = tempWrite.sync(rawBytes, att);
-        notify.next({
-          type: "net/att/finish",
-          payload: { att, messageId, attachId, size, localFile }
+        trigger("net/att/finish", {
+          att,
+          messageId,
+          attachId,
+          size,
+          localFile,
         });
         notify.complete();
       })
-      .catch(e => {
-        notify.next({ type: "net/att/error", payload: e });
+      .catch((e) => {
+        trigger("net/att/error", e);
       });
   });
 }
@@ -98,13 +109,13 @@ function urlDec(input) {
   return input.replace(/-/g, "+").replace(/_/g, "/");
 }
 
-function playFinishedAttachment({ event }) {
-  const { localFile } = event.payload;
-  return new Observable(notify => {
-    notify.next({ type: "player/play", payload: event.payload });
+function playFinishedAttachment({ payload }) {
+  const { localFile } = payload;
+  return new Observable((notify) => {
+    trigger("player/play", payload);
 
     const audio = player.play(localFile, () => {
-      notify.next({ type: "player/stop", payload: event.payload });
+      trigger("player/stop", payload);
       notify.complete();
     });
 
@@ -116,7 +127,7 @@ module.exports = {
   getMatchingMsgHeadersFromSearch,
   getAudioAttachments,
   downloadAttachment,
-  playFinishedAttachment
+  playFinishedAttachment,
 };
 
 // listMessages({ q: "Greg" }).then(msg => console.log(msg));
