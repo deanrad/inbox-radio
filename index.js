@@ -25,6 +25,14 @@ A sample session:
 
 */
 const { channel } = require("polyrhythm");
+const bus = require("./services/bus");
+bus.errors.subscribe(e => { throw e })
+// as a transitional measure, we'll handle some parts in omnibus,
+// but send all omnibus actions back to the channel, until all have moved over.
+channel.filter("goog/att/id", (e) => {
+  bus.trigger(e);
+});
+
 const { format, indent } = require("./format");
 
 let implementation;
@@ -70,9 +78,19 @@ channel.on("user/search", getMatchingMsgHeadersFromSearch);
 
 channel.on("goog/msg/header", getAudioAttachments);
 
+// Presuming
 // Option 1 - download attachments as you discover them (serially)
-channel.on("goog/att/id", downloadAttachment, {
-  mode: "serial",
+
+// 1.1 Do the async on the channel
+// channel.on("goog/att/id", downloadAttachment, {
+//   mode: "serial",
+// });
+
+// 1.2 do the async on the bus, putting them back on the channel
+bus.listenQueueing(({ type }) => type === "goog/att/id", downloadAttachment, {
+  next(e) {
+    channel.trigger(e.type, e.payload);
+  },
 });
 
 // Option 2 - Limit how far you can get ahead using some RxJS magic

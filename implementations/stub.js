@@ -26,15 +26,27 @@ function getAudioAttachments({ payload }) {
   );
 }
 
+// triggers to channel directly
+// function downloadAttachment({ payload }) {
+//   return concat(
+//     after(1000 * SCALE, () => trigger("net/att/start", payload)),
+//     after(3000 * SCALE, () =>
+//       trigger("net/att/finish", {
+//         ...payload,
+//         bytes: randomId() + "...",
+//       })
+//     )
+//   );
+// }
+
+// returns events
 function downloadAttachment({ payload }) {
   return concat(
-    after(1000 * SCALE, () => trigger("net/att/start", payload)),
-    after(3000 * SCALE, () =>
-      trigger("net/att/finish", {
-        ...payload,
-        bytes: randomId() + "...",
-      })
-    )
+    after(1000 * SCALE, () => ({ type: "net/att/start", payload })),
+    after(3000 * SCALE, () => ({
+      type: "net/att/finish",
+      payload: { ...payload, bytes: randomId() + "..." },
+    }))
   );
 }
 
