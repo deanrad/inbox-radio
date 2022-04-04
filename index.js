@@ -5,6 +5,8 @@ require("@babel/register")({
 });
 require("babel-polyfill");
 
+const { zip, concat, from } = require("rxjs");
+const { map, concatMap } = require("rxjs/operators");
 /*
 A sample session:
 👩🏽‍💻 user/search: q: Greg
@@ -31,8 +33,7 @@ bus.errors.subscribe((e) => {
 });
 const triggerToBus = {
   next(e) {
-    // channel.trigger(e.type, e.payload);
-    bus.trigger(e)
+    bus.trigger(e);
   },
 };
 
@@ -63,6 +64,7 @@ const { props, updateView } = require("./components/View");
 bus.spy((event) => {
   props.logs.push(indent(event) + format(event));
 });
+bus.spy(updateView);
 
 bus.filter(player.play.match, ({ payload: { att } }) => {
   props.nowPlaying.title = att;
@@ -79,23 +81,27 @@ bus.filter(goog.attachStart.match, ({ payload: { att } }) => {
 bus.filter(goog.attachBytes.match, ({ payload: { att } }) => {
   props.queue.find((i) => i.name === att).status = "done";
 });
-bus.spy(updateView);
 
 bus.listen(user.search.match, getMatchingMsgHeadersFromSearch, triggerToBus);
 
-// channel.on("goog/msg/header", getAudioAttachments);
 bus.listen(goog.msgHeader.match, getAudioAttachments, triggerToBus);
 
-bus.listenQueueing(goog.attachId.match, downloadAttachment, triggerToBus);
-
-// Backpressure-ish - not yet Omnibus-ified
-// const prePlays = n => from(Array(n));
-// const downloads = zip(
-//   channel.actionsOfType("goog/att/id"),
-//   concat(prePlays(2), channel.actionsOfType("player/play")),
-//   (att, _) => ({ action: att })
-// ).pipe(concatMap(downloadAttachment));
-// channel.subscribe(downloads);
+// To download and stream at full speed would just be..
+// bus.listenQueueing(goog.attachId.match, downloadAttachment, triggerToBus);
+// OR
+// To limit downloads to 1 ahead of the playing song
+const prePlays = (n) => from(Array(n));
+// prettier-ignore
+zip(
+  bus.query(goog.attachId.match),
+  concat(prePlays(1), bus.query(player.play.match))
+).pipe(
+  map(([{ payload }, _]) => goog.attachId(payload)),
+  // call the downloadAttachment serially, just as a listenQueueing would
+  concatMap(downloadAttachment)
+).subscribe(triggerToBus);
+// Explanation: after the first N preplays, we require a new player/play
+// event to progress ahead to the next serialized download from an attachId
 
 bus.listenQueueing(goog.attachBytes.match, playAttachment, triggerToBus);
 
@@ -103,7 +109,7 @@ function start() {
   //require("clear")();
   const search = process.argv[2] || "wedding";
   const query = `${search} {filename:mp3 filename:wav filename:m4a}`;
-  bus.trigger(user.search({q: query}))
+  bus.trigger(user.search({ q: query }));
 }
 
 // DO IT!

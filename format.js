@@ -5,13 +5,14 @@ function indent({ type }) {
     "player/complete": "",
     "goog/msg/header": " ".repeat(2),
     "goog/msg/body": " ".repeat(4),
+    "_goog/att/id": " ".repeat(4),
     "goog/att/id": " ".repeat(4),
     "goog/att/start": " ".repeat(2),
     "goog/att/bytes": " ".repeat(2)
   };
   const emoji = type => {
     if (type.match(/^user/)) return "👩🏽‍💻 ";
-    if (type.match(/^net/)) return "🛰 ";
+    if (type.match(/^goog\/att\/(start|bytes)/)) return "🛰 ";
     if (type.match(/^goog/)) return "📨 ";
     if (type.match(/^player/)) return "🔊 ";
     return "";
