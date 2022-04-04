@@ -32,14 +32,14 @@ function getAudioAttachments({ payload }) {
 // returns events
 function downloadAttachment({ payload }) {
   return concat(
-    after(1000 * SCALE, () => goog.attachStart(payload)),
+    after(0 * SCALE, () => goog.attachStart(payload)),
     after(3000 * SCALE, () => goog.attachBytes({ ...payload, bytes: "..." }))
   );
 }
 
 function playAttachment({ payload }) {
   return concat(
-    after(500 * SCALE, () => player.play(payload)),
+    after(0 * SCALE, () => player.play(payload)),
     after(5500 * SCALE, () => player.complete(payload))
   );
 }

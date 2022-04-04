@@ -96,13 +96,15 @@ function downloadAttachment({ payload }) {
         const bData = atob(urlDec(data));
         const rawBytes = Uint8Array.from(bData, (c) => c.charCodeAt(0));
         const localFile = tempWrite.sync(rawBytes, att);
-        notify.next(goog.attachBytes({
-          att,
-          messageId,
-          attachId,
-          size,
-          localFile,
-        }));
+        notify.next(
+          goog.attachBytes({
+            att,
+            messageId,
+            attachId,
+            size,
+            localFile,
+          })
+        );
         notify.complete();
       })
       .catch((e) => {
@@ -119,14 +121,17 @@ function urlDec(input) {
 function playAttachment({ payload }) {
   const { localFile } = payload;
   return new Observable((notify) => {
-    notify.next(player.play(payload))
+    notify.next(player.play(payload));
 
     const audio = soundPlayer.play(localFile, () => {
-      notify.next(player.stop(payload))
+      notify.next(player.stop(payload));
       notify.complete();
     });
 
-    return () => audio.kill();
+    return () => {
+      console.log("Attempting to stop audio");
+      audio.kill();
+    };
   });
 }
 

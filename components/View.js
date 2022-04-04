@@ -1,6 +1,4 @@
 const React = require("react");
-const { createElement } = React;
-const h = createElement;
 const { Color, Box, Text, render } = require("ink");
 const Spinner = require("ink-spinner").default;
 
@@ -68,7 +66,8 @@ const props = {
 };
 
 const updateView = () => {
-  render(h(View, props));
+  // just tell React to re-render whenever!
+  render(<View {...props}/>)
   if (props.queue.length > 4) {
     props.queue.shift();
   }
