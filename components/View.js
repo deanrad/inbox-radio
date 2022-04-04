@@ -3,7 +3,12 @@ const { createElement } = React;
 const h = createElement;
 const { Color, Box, Text, render } = require("ink");
 const Spinner = require("ink-spinner").default;
-const { randomId } = require("polyrhythm");
+
+const randomId = (length = 7) => {
+  return Math.floor(Math.pow(2, length * 4) * Math.random())
+    .toString(16)
+    .padStart(length, '0');
+};
 
 const View = ({ nowPlaying, queue, logs = [] }) => {
   return (

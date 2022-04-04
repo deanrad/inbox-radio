@@ -1,10 +1,11 @@
 const { google, googleAuthClient } = require("./googleAuth");
 const { Observable } = require("rxjs");
-const { trigger } = require("polyrhythm");
 const atob = require("atob");
 const tempWrite = require("temp-write");
-const player = require("play-sound")();
+const soundPlayer = require("play-sound")();
+
 const goog = require("../services/google");
+const player = require("../services/player");
 
 const gApi = googleAuthClient.then((auth) =>
   google.gmail({
@@ -49,22 +50,23 @@ function getAudioAttachments({ payload }) {
         .filter((h) => h.name === "From")
         .map((h) => h.value)[0];
       const to = headers.filter((h) => h.name === "To").map((h) => h.value)[0];
-      // const guid = headers.filter(h => h.name === "Message-ID").map(h => h.value)[0]
 
       const audioAttachments = parts.filter((p) => p.mimeType.match(/^audio/));
       audioAttachments.forEach((part) => {
         const { filename: att, mimeType } = part;
         const attachId = part.body.attachmentId;
-        
-        notify.next({type: "goog/att/id", payload: {
-          att,
-          snippet,
-          from,
-          messageId,
-          mimeType,
-          attachId,
-          to,
-        }});
+
+        notify.next(
+          goog.attachId({
+            att,
+            snippet,
+            from,
+            messageId,
+            mimeType,
+            attachId,
+            to,
+          })
+        );
       });
       notify.complete();
     });
@@ -86,7 +88,7 @@ function downloadAttachment({ payload }) {
   const { messageId, attachId, att } = payload;
 
   return new Observable((notify) => {
-    notify.next({ type: "goog/att/start", payload: { att } });
+    notify.next(goog.attachStart({ att }));
 
     googDownloadAtt({ attachId, messageId })
       .then((attachment) => {
@@ -94,20 +96,17 @@ function downloadAttachment({ payload }) {
         const bData = atob(urlDec(data));
         const rawBytes = Uint8Array.from(bData, (c) => c.charCodeAt(0));
         const localFile = tempWrite.sync(rawBytes, att);
-        notify.next({
-          type: "goog/att/bytes",
-          payload: {
-            att,
-            messageId,
-            attachId,
-            size,
-            localFile,
-          },
-        });
+        notify.next(goog.attachBytes({
+          att,
+          messageId,
+          attachId,
+          size,
+          localFile,
+        }));
         notify.complete();
       })
       .catch((e) => {
-        notify.next({ type: "goog/att/error", payload: e });
+        notify.next(goog.attachError(e));
       });
   });
 }
@@ -120,10 +119,10 @@ function urlDec(input) {
 function playAttachment({ payload }) {
   const { localFile } = payload;
   return new Observable((notify) => {
-    trigger("player/play", payload);
+    notify.next(player.play(payload))
 
-    const audio = player.play(localFile, () => {
-      trigger("player/stop", payload);
+    const audio = soundPlayer.play(localFile, () => {
+      notify.next(player.stop(payload))
       notify.complete();
     });
 

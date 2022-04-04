@@ -24,16 +24,15 @@ A sample session:
 🔊 player/complete: att: jam2.mp3, bytes: 4cd26f0...
 
 */
-
-const { channel } = require("polyrhythm");
-const { matchesAny } = require("omnibus-rxjs");
 const bus = require("./services/bus");
+
 bus.errors.subscribe((e) => {
   throw e;
 });
-const sendToChannel = {
+const triggerToBus = {
   next(e) {
-    channel.trigger(e.type, e.payload);
+    // channel.trigger(e.type, e.payload);
+    bus.trigger(e)
   },
 };
 
@@ -41,15 +40,6 @@ const sendToChannel = {
 const goog = require("./services/google");
 const player = require("./services/player");
 const user = require("./services/user");
-
-// as a transitional measure, we'll handle some parts in omnibus,
-// but send all omnibus actions back to the channel, until all have moved over.
-channel.listen(
-  matchesAny(goog.attachId, goog.attachBytes, goog.msgHeader, user.search),
-  (e) => {
-    bus.trigger(e);
-  }
-);
 
 const { format, indent } = require("./format");
 
@@ -70,34 +60,33 @@ const {
 
 const { props, updateView } = require("./components/View");
 
-// Log to an object
-channel.filter(true, (event) => {
+bus.spy((event) => {
   props.logs.push(indent(event) + format(event));
 });
 
-channel.filter(player.play.match, ({ payload: { att } }) => {
+bus.filter(player.play.match, ({ payload: { att } }) => {
   props.nowPlaying.title = att;
 });
-channel.filter(player.complete.match, ({ payload: { att } }) => {
+bus.filter(player.complete.match, ({ payload: { att } }) => {
   props.nowPlaying.title = "---";
 });
-channel.filter(goog.attachId.match, ({ payload: { att } }) => {
+bus.filter(goog.attachId.match, ({ payload: { att } }) => {
   props.queue = [...props.queue, { name: att, status: null }];
 });
-channel.filter(goog.attachStart.match, ({ payload: { att } }) => {
+bus.filter(goog.attachStart.match, ({ payload: { att } }) => {
   props.queue.find((i) => i.name === att).status = "downloading";
 });
-channel.filter(goog.attachBytes.match, ({ payload: { att } }) => {
+bus.filter(goog.attachBytes.match, ({ payload: { att } }) => {
   props.queue.find((i) => i.name === att).status = "done";
 });
-channel.filter(true, updateView);
+bus.spy(updateView);
 
-bus.listen(user.search.match, getMatchingMsgHeadersFromSearch, sendToChannel);
+bus.listen(user.search.match, getMatchingMsgHeadersFromSearch, triggerToBus);
 
 // channel.on("goog/msg/header", getAudioAttachments);
-bus.listen(goog.msgHeader.match, getAudioAttachments, sendToChannel);
+bus.listen(goog.msgHeader.match, getAudioAttachments, triggerToBus);
 
-bus.listenQueueing(goog.attachId.match, downloadAttachment, sendToChannel);
+bus.listenQueueing(goog.attachId.match, downloadAttachment, triggerToBus);
 
 // Backpressure-ish - not yet Omnibus-ified
 // const prePlays = n => from(Array(n));
@@ -108,19 +97,14 @@ bus.listenQueueing(goog.attachId.match, downloadAttachment, sendToChannel);
 // ).pipe(concatMap(downloadAttachment));
 // channel.subscribe(downloads);
 
-bus.listenQueueing(goog.attachBytes.match, playAttachment, sendToChannel);
+bus.listenQueueing(goog.attachBytes.match, playAttachment, triggerToBus);
 
 function start() {
   //require("clear")();
   const search = process.argv[2] || "wedding";
   const query = `${search} {filename:mp3 filename:wav filename:m4a}`;
-  channel.trigger("user/search", { q: query });
-  updateView();
+  bus.trigger(user.search({q: query}))
 }
-
-// WHAT
-// ----
-// HOW
 
 // DO IT!
 start();

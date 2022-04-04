@@ -1,7 +1,8 @@
-const { after, concat, randomId, trigger } = require("polyrhythm");
+const { after, concat } = require("omnibus-rxjs");
 const { empty } = require("rxjs");
 
 const goog = require("../services/google");
+const player = require("../services/player");
 
 const SCALE = process.env.SCALE ? parseFloat(process.env.SCALE) : 3.0;
 
@@ -31,18 +32,15 @@ function getAudioAttachments({ payload }) {
 // returns events
 function downloadAttachment({ payload }) {
   return concat(
-    after(1000 * SCALE, () => ({ type: "goog/att/start", payload })),
-    after(3000 * SCALE, () => ({
-      type: "goog/att/bytes",
-      payload: { ...payload, bytes: randomId() + "..." },
-    }))
+    after(1000 * SCALE, () => goog.attachStart(payload)),
+    after(3000 * SCALE, () => goog.attachBytes({ ...payload, bytes: "..." }))
   );
 }
 
 function playAttachment({ payload }) {
   return concat(
-    after(500 * SCALE, () => ({type: "player/play", payload})),
-    after(5500 * SCALE, () => ({type: "player/complete", payload}))
+    after(500 * SCALE, () => player.play(payload)),
+    after(5500 * SCALE, () => player.complete(payload))
   );
 }
 
