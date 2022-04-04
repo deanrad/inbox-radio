@@ -54,8 +54,8 @@ function getAudioAttachments({ payload }) {
       audioAttachments.forEach((part) => {
         const { filename: att, mimeType } = part;
         const attachId = part.body.attachmentId;
-        // Communicate back to the agent
-        trigger("goog/att/id", {
+        
+        notify.next({type: "goog/att/id", payload: {
           att,
           snippet,
           from,
@@ -63,7 +63,7 @@ function getAudioAttachments({ payload }) {
           mimeType,
           attachId,
           to,
-        });
+        }});
       });
       notify.complete();
     });

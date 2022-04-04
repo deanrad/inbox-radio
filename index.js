@@ -26,19 +26,27 @@ A sample session:
 */
 
 const { channel } = require("polyrhythm");
-const { matchesAny } = require('omnibus-rxjs');
+const { matchesAny } = require("omnibus-rxjs");
 const bus = require("./services/bus");
 bus.errors.subscribe((e) => {
   throw e;
 });
+const sendToChannel = {
+  next(e) {
+    channel.trigger(e.type, e.payload);
+  },
+};
 
 const goog = require("./services/google");
 
 // as a transitional measure, we'll handle some parts in omnibus,
 // but send all omnibus actions back to the channel, until all have moved over.
-channel.listen(matchesAny(goog.attachId, goog.attachBytes), (e) => {
-  bus.trigger(e);
-});
+channel.listen(
+  matchesAny(goog.attachId, goog.attachBytes, goog.msgHeader),
+  (e) => {
+    bus.trigger(e);
+  }
+);
 
 const { format, indent } = require("./format");
 
@@ -83,13 +91,9 @@ channel.filter(true, updateView);
 
 channel.on("user/search", getMatchingMsgHeadersFromSearch);
 
-channel.on("goog/msg/header", getAudioAttachments);
+// channel.on("goog/msg/header", getAudioAttachments);
+bus.listen(goog.msgHeader.match, getAudioAttachments, sendToChannel);
 
-const sendToChannel = {
-  next(e) {
-    channel.trigger(e.type, e.payload);
-  },
-};
 // Presuming
 // Option 1 - download attachments as you discover them (serially)
 

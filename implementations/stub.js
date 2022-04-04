@@ -1,5 +1,6 @@
 const { after, concat, randomId, trigger } = require("polyrhythm");
 const { empty } = require("rxjs");
+const goog = require("../services/google");
 
 const SCALE = process.env.SCALE ? parseFloat(process.env.SCALE) : 3.0;
 
@@ -20,24 +21,11 @@ function getAudioAttachments({ payload }) {
   }
   const atts = ["jam.mp3", "jam2.mp3", "jam3.mp3"];
   return concat(
-    after(2000 * SCALE, () => trigger("goog/att/id", { att: atts[0] })),
-    after(300 * SCALE, () => trigger("goog/att/id", { att: atts[1] })),
-    after(300 * SCALE, () => trigger("goog/att/id", { att: atts[2] }))
+    after(2000 * SCALE, goog.attachId({ att: atts[0] })),
+    after(300 * SCALE, goog.attachId({ att: atts[1] })),
+    after(300 * SCALE, goog.attachId({ att: atts[2] })),
   );
 }
-
-// triggers to channel directly
-// function downloadAttachment({ payload }) {
-//   return concat(
-//     after(1000 * SCALE, () => trigger("goog/att/start", payload)),
-//     after(3000 * SCALE, () =>
-//       trigger("goog/att/bytes", {
-//         ...payload,
-//         bytes: randomId() + "...",
-//       })
-//     )
-//   );
-// }
 
 // returns events
 function downloadAttachment({ payload }) {
