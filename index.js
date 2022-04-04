@@ -37,12 +37,15 @@ const sendToChannel = {
   },
 };
 
+// Services: sources of events
 const goog = require("./services/google");
+const player = require("./services/player");
+const user = require("./services/user");
 
 // as a transitional measure, we'll handle some parts in omnibus,
 // but send all omnibus actions back to the channel, until all have moved over.
 channel.listen(
-  matchesAny(goog.attachId, goog.attachBytes, goog.msgHeader),
+  matchesAny(goog.attachId, goog.attachBytes, goog.msgHeader, user.search),
   (e) => {
     bus.trigger(e);
   }
@@ -72,40 +75,31 @@ channel.filter(true, (event) => {
   props.logs.push(indent(event) + format(event));
 });
 
-channel.filter("player/play", ({ payload: { att } }) => {
+channel.filter(player.play.match, ({ payload: { att } }) => {
   props.nowPlaying.title = att;
 });
-channel.filter("player/complete", ({ payload: { att } }) => {
+channel.filter(player.complete.match, ({ payload: { att } }) => {
   props.nowPlaying.title = "---";
 });
-channel.filter("goog/att/id", ({ payload: { att } }) => {
+channel.filter(goog.attachId.match, ({ payload: { att } }) => {
   props.queue = [...props.queue, { name: att, status: null }];
 });
-channel.filter("goog/att/start", ({ payload: { att } }) => {
+channel.filter(goog.attachStart.match, ({ payload: { att } }) => {
   props.queue.find((i) => i.name === att).status = "downloading";
 });
-channel.filter("goog/att/bytes", ({ payload: { att } }) => {
+channel.filter(goog.attachBytes.match, ({ payload: { att } }) => {
   props.queue.find((i) => i.name === att).status = "done";
 });
 channel.filter(true, updateView);
 
-channel.on("user/search", getMatchingMsgHeadersFromSearch);
+bus.listen(user.search.match, getMatchingMsgHeadersFromSearch, sendToChannel);
 
 // channel.on("goog/msg/header", getAudioAttachments);
 bus.listen(goog.msgHeader.match, getAudioAttachments, sendToChannel);
 
-// Presuming
-// Option 1 - download attachments as you discover them (serially)
-
-// 1.1 Do the async on the channel
-// channel.on("goog/att/id", downloadAttachment, {
-//   mode: "serial",
-// });
-
-// 1.2 do the async on the bus, putting them back on the channel
 bus.listenQueueing(goog.attachId.match, downloadAttachment, sendToChannel);
 
-// Option 2 - Limit how far you can get ahead using some RxJS magic
+// Backpressure-ish - not yet Omnibus-ified
 // const prePlays = n => from(Array(n));
 // const downloads = zip(
 //   channel.actionsOfType("goog/att/id"),

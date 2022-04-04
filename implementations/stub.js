@@ -1,5 +1,6 @@
 const { after, concat, randomId, trigger } = require("polyrhythm");
 const { empty } = require("rxjs");
+
 const goog = require("../services/google");
 
 const SCALE = process.env.SCALE ? parseFloat(process.env.SCALE) : 3.0;
@@ -7,10 +8,10 @@ const SCALE = process.env.SCALE ? parseFloat(process.env.SCALE) : 3.0;
 function getMatchingMsgHeadersFromSearch() {
   return concat(
     after(2000 * SCALE, () =>
-      trigger("goog/msg/header", { subject: "Friday gig" })
+      goog.msgHeader({ subject: "Friday gig" })
     ),
     after(500 * SCALE, () =>
-      trigger("goog/msg/header", { subject: "Great jam" })
+      goog.msgHeader({ subject: "Great jam" })
     )
   );
 }

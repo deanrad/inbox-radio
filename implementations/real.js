@@ -4,6 +4,7 @@ const { trigger } = require("polyrhythm");
 const atob = require("atob");
 const tempWrite = require("temp-write");
 const player = require("play-sound")();
+const goog = require("../services/google");
 
 const gApi = googleAuthClient.then((auth) =>
   google.gmail({
@@ -30,7 +31,7 @@ function getMatchingMsgHeadersFromSearch({ payload }) {
   return new Observable((notify) => {
     listMessages(payload).then((messages) => {
       (messages || []).forEach(({ id: messageId }) =>
-        trigger("goog/msg/header", { messageId })
+        notify.next(goog.msgHeader({ messageId }))
       );
       notify.complete();
     });
