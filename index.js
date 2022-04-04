@@ -35,7 +35,7 @@ const goog = require("./services/google");
 
 // as a transitional measure, we'll handle some parts in omnibus,
 // but send all omnibus actions back to the channel, until all have moved over.
-channel.filter(goog.attachId.match, (e) => {
+channel.listen(goog.attachId.match, (e) => {
   bus.trigger(e);
 });
 
@@ -98,11 +98,7 @@ const sendToChannel = {
 // });
 
 // 1.2 do the async on the bus, putting them back on the channel
-bus.listenQueueing(
-  goog.attachId.match,
-  downloadAttachment,
-  sendToChannel
-);
+bus.listenQueueing(goog.attachId.match, downloadAttachment, sendToChannel);
 
 // Option 2 - Limit how far you can get ahead using some RxJS magic
 // const prePlays = n => from(Array(n));

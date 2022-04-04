@@ -13,7 +13,9 @@ const gApi = googleAuthClient.then((auth) =>
 );
 
 async function listMessages(query) {
-  const res = await (await gApi).users.messages.list({
+  const res = await (
+    await gApi
+  ).users.messages.list({
     userId: "me",
     ...query,
   });
@@ -69,7 +71,9 @@ function getAudioAttachments({ payload }) {
 }
 async function googDownloadAtt({ attachId, messageId }) {
   return (
-    await (await gApi).users.messages.attachments.get({
+    await (
+      await gApi
+    ).users.messages.attachments.get({
       id: attachId,
       messageId,
       userId: "me",
@@ -81,7 +85,7 @@ function downloadAttachment({ payload }) {
   const { messageId, attachId, att } = payload;
 
   return new Observable((notify) => {
-    trigger("net/att/start", { att });
+    notify.next({ type: "net/att/start", payload: { att } });
 
     googDownloadAtt({ attachId, messageId })
       .then((attachment) => {
@@ -89,17 +93,20 @@ function downloadAttachment({ payload }) {
         const bData = atob(urlDec(data));
         const rawBytes = Uint8Array.from(bData, (c) => c.charCodeAt(0));
         const localFile = tempWrite.sync(rawBytes, att);
-        trigger("net/att/finish", {
-          att,
-          messageId,
-          attachId,
-          size,
-          localFile,
+        notify.next({
+          type: "net/att/finish",
+          payload: {
+            att,
+            messageId,
+            attachId,
+            size,
+            localFile,
+          },
         });
         notify.complete();
       })
       .catch((e) => {
-        trigger("net/att/error", e);
+        notify.next({ type: "net/att/error", payload: e });
       });
   });
 }
