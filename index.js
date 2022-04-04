@@ -24,12 +24,18 @@ A sample session:
 🔊 player/complete: att: jam2.mp3, bytes: 4cd26f0...
 
 */
+
 const { channel } = require("polyrhythm");
 const bus = require("./services/bus");
-bus.errors.subscribe(e => { throw e })
+bus.errors.subscribe((e) => {
+  throw e;
+});
+
+const goog = require("./services/google");
+
 // as a transitional measure, we'll handle some parts in omnibus,
 // but send all omnibus actions back to the channel, until all have moved over.
-channel.filter("goog/att/id", (e) => {
+channel.filter(goog.attachId.match, (e) => {
   bus.trigger(e);
 });
 
@@ -78,6 +84,11 @@ channel.on("user/search", getMatchingMsgHeadersFromSearch);
 
 channel.on("goog/msg/header", getAudioAttachments);
 
+const sendToChannel = {
+  next(e) {
+    channel.trigger(e.type, e.payload);
+  },
+};
 // Presuming
 // Option 1 - download attachments as you discover them (serially)
 
@@ -87,11 +98,11 @@ channel.on("goog/msg/header", getAudioAttachments);
 // });
 
 // 1.2 do the async on the bus, putting them back on the channel
-bus.listenQueueing(({ type }) => type === "goog/att/id", downloadAttachment, {
-  next(e) {
-    channel.trigger(e.type, e.payload);
-  },
-});
+bus.listenQueueing(
+  goog.attachId.match,
+  downloadAttachment,
+  sendToChannel
+);
 
 // Option 2 - Limit how far you can get ahead using some RxJS magic
 // const prePlays = n => from(Array(n));
