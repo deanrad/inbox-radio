@@ -14,11 +14,11 @@ A sample session:
     📨 goog/msg/body: subject: Great jam, att: [jam.mp3, jam2.mp3]
     📨 goog/att/id: att: jam.mp3
     📨 goog/att/id: att: jam2.mp3
-  🛰 net/att/start: att: jam.mp3
-  🛰 net/att/finish: att: jam.mp3, bytes: ed5e27a...
+  🛰 goog/att/start: att: jam.mp3
+  🛰 goog/att/bytes: att: jam.mp3, bytes: ed5e27a...
 🔊 player/play: att: jam.mp3, bytes: ed5e27a...
-  🛰 net/att/start: att: jam2.mp3
-  🛰 net/att/finish: att: jam2.mp3, bytes: 4cd26f0...
+  🛰 goog/att/start: att: jam2.mp3
+  🛰 goog/att/bytes: att: jam2.mp3, bytes: 4cd26f0...
 🔊 player/complete: att: jam.mp3, bytes: ed5e27a...
 🔊 player/play: att: jam2.mp3, bytes: 4cd26f0...
 🔊 player/complete: att: jam2.mp3, bytes: 4cd26f0...
@@ -26,6 +26,7 @@ A sample session:
 */
 
 const { channel } = require("polyrhythm");
+const { matchesAny } = require('omnibus-rxjs');
 const bus = require("./services/bus");
 bus.errors.subscribe((e) => {
   throw e;
@@ -35,7 +36,7 @@ const goog = require("./services/google");
 
 // as a transitional measure, we'll handle some parts in omnibus,
 // but send all omnibus actions back to the channel, until all have moved over.
-channel.listen(goog.attachId.match, (e) => {
+channel.listen(matchesAny(goog.attachId, goog.attachBytes), (e) => {
   bus.trigger(e);
 });
 
@@ -53,7 +54,7 @@ const {
   getMatchingMsgHeadersFromSearch,
   getAudioAttachments,
   downloadAttachment,
-  playFinishedAttachment,
+  playAttachment,
 } = implementation;
 
 const { props, updateView } = require("./components/View");
@@ -72,10 +73,10 @@ channel.filter("player/complete", ({ payload: { att } }) => {
 channel.filter("goog/att/id", ({ payload: { att } }) => {
   props.queue = [...props.queue, { name: att, status: null }];
 });
-channel.filter("net/att/start", ({ payload: { att } }) => {
+channel.filter("goog/att/start", ({ payload: { att } }) => {
   props.queue.find((i) => i.name === att).status = "downloading";
 });
-channel.filter("net/att/finish", ({ payload: { att } }) => {
+channel.filter("goog/att/bytes", ({ payload: { att } }) => {
   props.queue.find((i) => i.name === att).status = "done";
 });
 channel.filter(true, updateView);
@@ -109,9 +110,7 @@ bus.listenQueueing(goog.attachId.match, downloadAttachment, sendToChannel);
 // ).pipe(concatMap(downloadAttachment));
 // channel.subscribe(downloads);
 
-channel.on("net/att/finish", playFinishedAttachment, {
-  mode: "serial",
-});
+bus.listenQueueing(goog.attachBytes.match, playAttachment, sendToChannel);
 
 function start() {
   //require("clear")();

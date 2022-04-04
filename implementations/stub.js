@@ -29,9 +29,9 @@ function getAudioAttachments({ payload }) {
 // triggers to channel directly
 // function downloadAttachment({ payload }) {
 //   return concat(
-//     after(1000 * SCALE, () => trigger("net/att/start", payload)),
+//     after(1000 * SCALE, () => trigger("goog/att/start", payload)),
 //     after(3000 * SCALE, () =>
-//       trigger("net/att/finish", {
+//       trigger("goog/att/bytes", {
 //         ...payload,
 //         bytes: randomId() + "...",
 //       })
@@ -42,18 +42,18 @@ function getAudioAttachments({ payload }) {
 // returns events
 function downloadAttachment({ payload }) {
   return concat(
-    after(1000 * SCALE, () => ({ type: "net/att/start", payload })),
+    after(1000 * SCALE, () => ({ type: "goog/att/start", payload })),
     after(3000 * SCALE, () => ({
-      type: "net/att/finish",
+      type: "goog/att/bytes",
       payload: { ...payload, bytes: randomId() + "..." },
     }))
   );
 }
 
-function playFinishedAttachment({ payload }) {
+function playAttachment({ payload }) {
   return concat(
-    after(500 * SCALE, () => trigger("player/play", payload)),
-    after(5500 * SCALE, () => trigger("player/complete", payload))
+    after(500 * SCALE, () => ({type: "player/play", payload})),
+    after(5500 * SCALE, () => ({type: "player/complete", payload}))
   );
 }
 
@@ -61,5 +61,5 @@ module.exports = {
   getMatchingMsgHeadersFromSearch,
   getAudioAttachments,
   downloadAttachment,
-  playFinishedAttachment,
+  playAttachment,
 };

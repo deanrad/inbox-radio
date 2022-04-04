@@ -85,7 +85,7 @@ function downloadAttachment({ payload }) {
   const { messageId, attachId, att } = payload;
 
   return new Observable((notify) => {
-    notify.next({ type: "net/att/start", payload: { att } });
+    notify.next({ type: "goog/att/start", payload: { att } });
 
     googDownloadAtt({ attachId, messageId })
       .then((attachment) => {
@@ -94,7 +94,7 @@ function downloadAttachment({ payload }) {
         const rawBytes = Uint8Array.from(bData, (c) => c.charCodeAt(0));
         const localFile = tempWrite.sync(rawBytes, att);
         notify.next({
-          type: "net/att/finish",
+          type: "goog/att/bytes",
           payload: {
             att,
             messageId,
@@ -106,7 +106,7 @@ function downloadAttachment({ payload }) {
         notify.complete();
       })
       .catch((e) => {
-        notify.next({ type: "net/att/error", payload: e });
+        notify.next({ type: "goog/att/error", payload: e });
       });
   });
 }
@@ -116,7 +116,7 @@ function urlDec(input) {
   return input.replace(/-/g, "+").replace(/_/g, "/");
 }
 
-function playFinishedAttachment({ payload }) {
+function playAttachment({ payload }) {
   const { localFile } = payload;
   return new Observable((notify) => {
     trigger("player/play", payload);
@@ -134,7 +134,7 @@ module.exports = {
   getMatchingMsgHeadersFromSearch,
   getAudioAttachments,
   downloadAttachment,
-  playFinishedAttachment,
+  playAttachment,
 };
 
 // listMessages({ q: "Greg" }).then(msg => console.log(msg));

@@ -6,8 +6,8 @@ function indent({ type }) {
     "goog/msg/header": " ".repeat(2),
     "goog/msg/body": " ".repeat(4),
     "goog/att/id": " ".repeat(4),
-    "net/att/start": " ".repeat(2),
-    "net/att/finish": " ".repeat(2)
+    "goog/att/start": " ".repeat(2),
+    "goog/att/bytes": " ".repeat(2)
   };
   const emoji = type => {
     if (type.match(/^user/)) return "👩🏽‍💻 ";
