@@ -31,79 +31,46 @@ bus.errors.subscribe((e) => {
 });
 const triggerToBus = {
   next(e) {
-    // channel.trigger(e.type, e.payload);
-    bus.trigger(e)
+    bus.trigger(e);
   },
 };
 
-// Services: sources of events
+// Services: sources of events / Actors
 const goog = require("./services/google");
 const player = require("./services/player");
 const user = require("./services/user");
 
-const { format, indent } = require("./format");
-
 let implementation;
 
-if (process.env.DEMO === "1") {
+if (true || process.env.DEMO === "1") {
   implementation = require("./implementations/stub");
 } else {
   implementation = require("./implementations/real");
 }
 
-const {
-  getMatchingMsgHeadersFromSearch,
-  getAudioAttachments,
-  downloadAttachment,
-  playAttachment,
-} = implementation;
+const { getMatchingMessages, getBodyText } = implementation;
 
 const { props, updateView } = require("./components/View");
 
+// Spies (every event)
 bus.spy((event) => {
-  props.logs.push(indent(event) + format(event));
-});
-
-bus.filter(player.play.match, ({ payload: { att } }) => {
-  props.nowPlaying.title = att;
-});
-bus.filter(player.complete.match, ({ payload: { att } }) => {
-  props.nowPlaying.title = "---";
-});
-bus.filter(goog.attachId.match, ({ payload: { att } }) => {
-  props.queue = [...props.queue, { name: att, status: null }];
-});
-bus.filter(goog.attachStart.match, ({ payload: { att } }) => {
-  props.queue.find((i) => i.name === att).status = "downloading";
-});
-bus.filter(goog.attachBytes.match, ({ payload: { att } }) => {
-  props.queue.find((i) => i.name === att).status = "done";
+  props.logs.push(`${event.type}: ${event.payload}`);
 });
 bus.spy(updateView);
 
-bus.listen(user.search.match, getMatchingMsgHeadersFromSearch, triggerToBus);
+// Filters (before each event)
 
-// channel.on("goog/msg/header", getAudioAttachments);
-bus.listen(goog.msgHeader.match, getAudioAttachments, triggerToBus);
+// Listeners (after each event)
+bus.listen(user.search.match, getMatchingMessages, triggerToBus);
 
-bus.listenQueueing(goog.attachId.match, downloadAttachment, triggerToBus);
-
-// Backpressure-ish - not yet Omnibus-ified
-// const prePlays = n => from(Array(n));
-// const downloads = zip(
-//   channel.actionsOfType("goog/att/id"),
-//   concat(prePlays(2), channel.actionsOfType("player/play")),
-//   (att, _) => ({ action: att })
-// ).pipe(concatMap(downloadAttachment));
-// channel.subscribe(downloads);
-
-bus.listenQueueing(goog.attachBytes.match, playAttachment, triggerToBus);
+// bus.listen(goog.msgHeader.match, getBodies, triggerToBus);
+// bus.listenQueueing(goog.bodyText.match, playAttachment, triggerToBus);
 
 function start() {
   //require("clear")();
   const search = process.argv[2] || "wedding";
   const query = `${search} {filename:mp3 filename:wav filename:m4a}`;
-  bus.trigger(user.search({q: query}))
+  bus.trigger(user.search({ q: query }));
 }
 
 // DO IT!
