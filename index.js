@@ -42,19 +42,19 @@ const user = require("./services/user");
 
 let implementation;
 
-if (true || process.env.DEMO === "1") {
+if (process.env.DEMO === "1") {
   implementation = require("./implementations/stub");
 } else {
   implementation = require("./implementations/real");
 }
 
-const { getMatchingMessages, getBodyText } = implementation;
+const { getMatchingMessages, playSubject, getMsgBody } = implementation;
 
 const { props, updateView } = require("./components/View");
 
 // Spies (every event)
 bus.spy((event) => {
-  props.logs.push(`${event.type}: ${event.payload}`);
+  props.logs.push(`${event.type}: ${JSON.stringify(event.payload)}`);
 });
 bus.spy(updateView);
 
@@ -62,14 +62,13 @@ bus.spy(updateView);
 
 // Listeners (after each event)
 bus.listen(user.search.match, getMatchingMessages, triggerToBus);
-
-// bus.listen(goog.msgHeader.match, getBodies, triggerToBus);
-// bus.listenQueueing(goog.bodyText.match, playAttachment, triggerToBus);
+bus.listen(goog.msgHeader.match, getMsgBody, triggerToBus);
+// bus.listenQueueing(goog.msgBody.match, player.playSubject, triggerToBus);
 
 function start() {
   //require("clear")();
-  const search = process.argv[2] || "wedding";
-  const query = `${search} {filename:mp3 filename:wav filename:m4a}`;
+
+  const query = "from:(hortond@district65.net)";
   bus.trigger(user.search({ q: query }));
 }
 
