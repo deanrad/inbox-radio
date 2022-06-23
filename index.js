@@ -53,12 +53,17 @@ const { getMatchingMessages, playSubject, getMsgBody } = implementation;
 const { props, updateView } = require("./components/View");
 
 // Spies (every event)
-bus.spy((event) => {
-  props.logs.push(`${event.type}: ${JSON.stringify(event.payload)}`);
-});
-bus.spy(updateView);
+// bus.spy((event) => {
+//   props.logs.push(`${event.type}: ${JSON.stringify(event.payload)}`);
+// });
+// bus.spy(updateView);
 
 // Filters (before each event)
+bus.filter(goog.msgBody.match, ({ payload: { body, date } }) => {
+  console.log("---");
+  console.log(`Date: ${date.toString("YYYY-MM-DD")}`);
+  console.log(body);
+});
 
 // Listeners (after each event)
 bus.listen(user.search.match, getMatchingMessages, triggerToBus);

@@ -38,19 +38,20 @@ function getMatchingMessages({ payload }) {
       );
       notify.complete();
     });
-  }).pipe(take(3));
+  }); //.pipe(take(1));
 }
 
 function getMsgBody({ payload }) {
   const { messageId } = payload;
   return getBody(messageId).then((msg) => {
+    const date = new Date(Number(msg.internalDate));
     const subject = msg.payload.headers.find(
       (h) => h.name.toLowerCase() === "subject"
     ).value;
     let decoder = Buffer.from(msg.payload.parts[0].body.data, "base64");
 
     // return goog.msgBody({ subject, textPart: msg.payload.parts[0] });
-    return goog.msgBody({ subject, body: decoder.toString("utf8") });
+    return goog.msgBody({ subject, date, body: decoder.toString("utf8") });
   });
 }
 
