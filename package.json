@@ -5,7 +5,8 @@
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "codegen": "babel-node code.jsx"
   },
   "author": "",
   "license": "ISC",
@@ -14,19 +15,23 @@
     "clear": "^0.1.0",
     "express": "^4.17.1",
     "googleapis": "^39.2.0",
+    "immer": "^10.0.3",
     "ink": "^2.1.1",
     "ink-box": "^1.0.0",
     "ink-spinner": "^3.0.0",
     "omnibus-rxjs": "^1.0.3",
     "play-sound": "^1.1.3",
     "react": "^16.8.6",
+    "react-ast": "^0.4.1",
     "rxjs": "^6.4.0",
     "temp-write": "^3.4.0"
   },
   "devDependencies": {
+    "@babel/cli": "^7.23.4",
     "@babel/core": "^7.4.4",
-    "@babel/preset-env": "^7.4.4",
-    "@babel/preset-react": "^7.0.0",
+    "@babel/preset-env": "^7.23.5",
+    "@babel/preset-react": "^7.23.3",
+    "@babel/preset-typescript": "^7.23.3",
     "@babel/register": "^7.4.4",
     "babel-plugin-jsx-control-statements": "^4.0.0",
     "babel-polyfill": "^6.26.0"
